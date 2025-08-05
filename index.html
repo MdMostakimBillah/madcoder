@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="bn">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -9,7 +9,10 @@
 </head>
 <body>
     
+    
+
     <div class="container" >
+
         <div class="divBlur"></div>
         <!-- Hero section  -->
          <div class="here-container">
@@ -24,27 +27,36 @@
                     </div>
                     <div class="middleContent">
                         <ul>
-                            <li class="active"><i class="fa-solid fa-circle"></i> <a href="#about"> About</a></li>
-                            <li><i class="fa-solid fa-circle"></i> <a href="#project"> Project</a></li>
-                            <li><i class="fa-solid fa-circle"></i> <a href="#experience"> Experience</a></li>
+                            <li class="NavItems"><i class="fa-solid fa-circle"></i> <a href="#about"> About</a></li>
+                            <li class="NavItems"><i class="fa-solid fa-circle"></i> <a href="#project"> Project</a></li>
+                            <li class="NavItems"><i class="fa-solid fa-circle"></i> <a href="#experience"> Experience</a></li>
                         </ul>
                     </div>
                     <div class="contact">
                         <ul>
-                            <li><a href=""><i class="fa-brands fa-x-twitter"></i></a></li>
+                            <li><a target="_blank" href="https://x.com/SearchMadCoder"><i class="fa-brands fa-x-twitter"></i></a></li>
                             <!-- <li><a href=""><i class="fa-brands fa-facebook-f"></i></a></li> -->
-                            <li><a href=""><i class="fa-brands fa-linkedin-in"></i></a></li>
-                            <li><a href=""><i class="fa-brands fa-discord"></i></a></li>
+                            <li><a href="#"><i class="fa-brands fa-linkedin-in"></i></a></li>
+                            <li><a href="https://discord.com/channels/1139892246863425596/1139892247542906911"><i class="fa-brands fa-discord"></i></a></li>
                         </ul>
                     </div>
                 </div>
                 <!-- right side  -->
                 <div class="mainContentArea">
                     <div class="singleContainerArea" id="about">
+                        <!-- <div class="Identity">
+                            <div class="meImage">
+                                <img src="./img/1000086129.png" alt="">
+                            </div>
+                            <p><b>Name:</b> <span>Md Mostakim Billah</span></p>
+                            <p><b>Age:</b> <span>23</span></p>
+                            <p><b>Gender:</b> <span>Male</span></p>
+                            <p><b>Blood:</b> <span>O- (ve)</span></p>
+                        </div> -->
                         <div>
                             <h1>About</h1>
                             <p>
-                                My name is Mohammad Mostakim Billah, and I am currently pursuing a Bachelor of Science (B.Sc.) degree in Computer Science and Engineering (CSE). I am highly passionate about technology and always eager to learn something new every day.
+                                My name is <span class="personalId"> Mohammad Mostakim Billah,</span> and I am currently pursuing a Bachelor of Science (B.Sc.) degree in Computer Science and Engineering (CSE). I am highly passionate about technology and always eager to learn something new every day.
                             </p>
                             <p>
                                 Programming is one of my core interests, and I actively seek to improve my skills and knowledge in this field. I adapt quickly to new environments and enjoy collaborating with different people.
@@ -82,17 +94,27 @@
                         <div>
                             <h1>Experiences</h1>
                             <p>
-                                Lorem ipsum dolor sit amet consectetur adipisicing elit. Vitae fugit delectus accusamus rerum doloribus reiciendis ad maxime sequi eaque deserunt inventore unde itaque animi pariatur cumque laboriosam voluptatum minus officia quibusdam tempora, consectetur quae quis eum impedit. Officia natus iure tempora, sequi quod culpa magnam est esse ducimus consectetur sed!
+                                I have practical experience working as a freelance web developer on platforms like Fiverr and Upwork, where I successfully completed several client projects. My primary focus is front-end development using React.js and modern web technologies.
                             </p>
 
-
                             <p>
-                                Lorem ipsum dolor sit amet consectetur adipisicing elit. Vitae fugit delectus accusamus rerum doloribus reiciendis ad maxime sequi eaque deserunt inventore unde itaque animi pariatur cumque laboriosam voluptatum minus officia quibusdam tempora, consectetur quae quis eum impedit. Officia natus iure tempora, sequi quod culpa magnam est esse ducimus consectetur sed!
+                                In addition to my technical background, I worked for 9 months at a textile factory in Dhaka EPZ (BEPZA), which helped me understand teamwork, discipline, and industrial workflow in a real-world environment.
                             </p>
 
+                            <p>
+                                I also served as a security personnel for 3 months, a responsibility that greatly enhanced my personal discipline, work ethics, and sense of accountability. 
+                            </p>
 
                             <p>
-                                Lorem ipsum dolor sit amet consectetur adipisicing elit. Vitae fugit delectus accusamus rerum doloribus reiciendis ad maxime sequi eaque deserunt inventore unde itaque animi pariatur cumque laboriosam voluptatum minus officia quibusdam tempora, consectetur quae quis eum impedit. Officia natus iure tempora, sequi quod culpa magnam est esse ducimus consectetur sed!
+                                Completed a 7-day winter camp with the Bangladesh Army in my collage life BNCC, gaining valuable experience in discipline, teamwork, leadership, and resilience in physically and mentally challenging conditions.
+                            </p>
+
+                            <p>
+                                Currently, I am working as a Mathematics and Science teacher at a religious (Deeni) educational institution, where I am able to combine my passion for teaching with my commitment to community development and moral values.
+                            </p>
+
+                            <p>
+                                Moreover, I have strong skills in basic computing, including Microsoft Word, Excel, PowerPoint, internet browsing, data entry, and fast typing. I’m a quick learner, adaptable to new environments, and always eager to grow through challenges and learning opportunities.
                             </p>
 
                         </div>
@@ -119,7 +141,8 @@
             box.style.left = `${left}px`;
             box.style.top = `${top}px`;
         });
-    </script>
 
+    </script>
+    <script src="./script/app.js"></script>
 </body>
 </html>

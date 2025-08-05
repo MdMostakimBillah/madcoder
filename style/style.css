@@ -89,7 +89,7 @@ a{
 .identity h1 {
     font-family: "calibri-bold", sans-serif;
     color: #dddddd;;
-    font-size: 40px;
+    font-size: 45px;
 }
 .identity h3{
     color: #dddddd;
@@ -123,18 +123,35 @@ a{
 .middleContent ul li {
     line-height: 30px;
 }
-.middleContent ul li.active i,
-.middleContent ul li.active a{
+/* .middleContent ul li.active i{
     color: #dddddd;
+    transition: 0.2s linear;
+} */
+/* .middleContent ul li.active a{
+    color: #dddddd;
+    transition: 0.2s linear;
+    font-family: 'calibri-bold';
 }
 .middleContent ul li.active a{
-    font-size: 16px;
+    transition: 0.2s linear;
+    font-family: 'calibri-bold';
+} */
+
+.active i{
+    color: #dddddd !important; 
+    transition: 0.2s linear;
 }
+.active a{
+    color: #dddddd !important;
+    transition: 0.2s linear;
+    font-family: 'calibri-bold';
+}
+
 .middleContent ul li a{
     color: #a3a3a3;
     font-weight: 500;
     margin-left: 5px;
-    font-size: 15px;
+    font-size: 17px;
 }
 .middleContent ul li{
     display: flex;
@@ -166,3 +183,38 @@ a{
     display: none;
     width: 0px;
 }
+
+
+
+/* hover details  */
+/* .personalId{
+    position: relative;
+}  */
+
+/* .Identity {
+    position: absolute;
+    margin-top: -500px;
+    text-align: center;
+    width: 250px;
+    background-color: transparent;
+    backdrop-filter: blur(5px);
+    padding: 10px;
+    border-radius: 5px;
+    z-index: 9999;
+    border: 1px solid rgba(156, 156, 156, 0.514);
+}
+.Identity p{
+    color: #dddddd;
+    text-align: center !important;
+    line-height: 12px;
+}
+
+.meImage {
+    width: 100px;
+    margin: 0 auto;
+    border-radius: 50%;
+    overflow: hidden;
+}
+.meImage img{
+    width: 100%;
+} */
