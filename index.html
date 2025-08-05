@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MadCoder</title>
+    <link rel="stylesheet" href="./style/style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.2/css/all.min.css" integrity="sha512-Evv84Mr4kqVGRNSgIGL/F/aIDqQb7xQ2vcrdIwxfjThSH8CSR7PBEakCr51Ck+w+/U6swU2Im1vVX0SVk9ABhg==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+</head>
+<body>
+    
+    <div class="container" >
+        <div class="divBlur"></div>
+        <!-- Hero section  -->
+         <div class="here-container">
+
+            <div class="parentContent">
+                <!-- left side  -->
+                <div class="navBar">
+                    <div class="identity">
+                        <h1>Mostakim Billah</h1>
+                        <h3>Student of BSc in CSE</h3>
+                        <p>Aspiring front-end developer, passionate about clean code, continuous learning, and building impactful digital experiences.</p>
+                    </div>
+                    <div class="middleContent">
+                        <ul>
+                            <li class="active"><i class="fa-solid fa-circle"></i> <a href="#about"> About</a></li>
+                            <li><i class="fa-solid fa-circle"></i> <a href="#project"> Project</a></li>
+                            <li><i class="fa-solid fa-circle"></i> <a href="#experience"> Experience</a></li>
+                        </ul>
+                    </div>
+                    <div class="contact">
+                        <ul>
+                            <li><a href=""><i class="fa-brands fa-x-twitter"></i></a></li>
+                            <!-- <li><a href=""><i class="fa-brands fa-facebook-f"></i></a></li> -->
+                            <li><a href=""><i class="fa-brands fa-linkedin-in"></i></a></li>
+                            <li><a href=""><i class="fa-brands fa-discord"></i></a></li>
+                        </ul>
+                    </div>
+                </div>
+                <!-- right side  -->
+                <div class="mainContentArea">
+                    <div class="singleContainerArea" id="about">
+                        <div>
+                            <h1>About</h1>
+                            <p>
+                                My name is Mohammad Mostakim Billah, and I am currently pursuing a Bachelor of Science (B.Sc.) degree in Computer Science and Engineering (CSE). I am highly passionate about technology and always eager to learn something new every day.
+                            </p>
+                            <p>
+                                Programming is one of my core interests, and I actively seek to improve my skills and knowledge in this field. I adapt quickly to new environments and enjoy collaborating with different people.
+                            </p>
+                            <p>
+                                I am highly focused when it comes to productivity, and I tend to stay mentally engaged with a task until it is fully completed.
+                            </p>
+                            <p>
+                                Reading books is one of my favorite habits, as it enriches my knowledge and inspires me to grow continuously.
+                            </p>
+                        </div>
+                    </div>
+
+                    <div class="singleContainerArea" id="project">
+                        <div>
+                            <h1>Project</h1>
+                            <p>
+                                Lorem ipsum dolor sit amet consectetur adipisicing elit. Vitae fugit delectus accusamus rerum doloribus reiciendis ad maxime sequi eaque deserunt inventore unde itaque animi pariatur cumque laboriosam voluptatum minus officia quibusdam tempora, consectetur quae quis eum impedit. Officia natus iure tempora, sequi quod culpa magnam est esse ducimus consectetur sed!
+                            </p>
+
+
+                            <p>
+                                Lorem ipsum dolor sit amet consectetur adipisicing elit. Vitae fugit delectus accusamus rerum doloribus reiciendis ad maxime sequi eaque deserunt inventore unde itaque animi pariatur cumque laboriosam voluptatum minus officia quibusdam tempora, consectetur quae quis eum impedit. Officia natus iure tempora, sequi quod culpa magnam est esse ducimus consectetur sed!
+                            </p>
+
+
+                            <p>
+                                Lorem ipsum dolor sit amet consectetur adipisicing elit. Vitae fugit delectus accusamus rerum doloribus reiciendis ad maxime sequi eaque deserunt inventore unde itaque animi pariatur cumque laboriosam voluptatum minus officia quibusdam tempora, consectetur quae quis eum impedit. Officia natus iure tempora, sequi quod culpa magnam est esse ducimus consectetur sed!
+                            </p>
+
+                        </div>
+                    </div>
+
+                    <div class="singleContainerArea" id="experience">
+                        <div>
+                            <h1>Experiences</h1>
+                            <p>
+                                Lorem ipsum dolor sit amet consectetur adipisicing elit. Vitae fugit delectus accusamus rerum doloribus reiciendis ad maxime sequi eaque deserunt inventore unde itaque animi pariatur cumque laboriosam voluptatum minus officia quibusdam tempora, consectetur quae quis eum impedit. Officia natus iure tempora, sequi quod culpa magnam est esse ducimus consectetur sed!
+                            </p>
+
+
+                            <p>
+                                Lorem ipsum dolor sit amet consectetur adipisicing elit. Vitae fugit delectus accusamus rerum doloribus reiciendis ad maxime sequi eaque deserunt inventore unde itaque animi pariatur cumque laboriosam voluptatum minus officia quibusdam tempora, consectetur quae quis eum impedit. Officia natus iure tempora, sequi quod culpa magnam est esse ducimus consectetur sed!
+                            </p>
+
+
+                            <p>
+                                Lorem ipsum dolor sit amet consectetur adipisicing elit. Vitae fugit delectus accusamus rerum doloribus reiciendis ad maxime sequi eaque deserunt inventore unde itaque animi pariatur cumque laboriosam voluptatum minus officia quibusdam tempora, consectetur quae quis eum impedit. Officia natus iure tempora, sequi quod culpa magnam est esse ducimus consectetur sed!
+                            </p>
+
+                        </div>
+                    </div>
+
+
+
+
+                </div>
+            </div>
+           
+         </div>
+    </div>
+
+    <script>
+        const box = document.querySelector(".divBlur");
+        document.addEventListener("mousemove", (event) => {
+            const boxWidth = 500;
+            const boxHeight = 500;
+
+            const left = event.clientX - boxWidth / 2;
+            const top = event.clientY - boxHeight / 2;
+
+            box.style.left = `${left}px`;
+            box.style.top = `${top}px`;
+        });
+    </script>
+
+</body>
+</html>

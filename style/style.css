@@ -1,0 +1,188 @@
+@font-face {
+  font-family: 'calibri-regular';
+  src: url('../font/calibri-regular.ttf');
+}
+@font-face {
+  font-family: 'calibri-bold';
+  src: url('../font/calibri-bold.ttf');
+}
+*::selection {
+  background: #fcca24b0;
+  color: #ffffff;
+}
+*::-moz-selection {
+  background: #fcca24b0;
+  color: #ffffff;
+}
+*::-webkit-selection {
+  background: #fcca24b0;
+  color: #ffffff;
+}
+*{
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    font-family: "calibri-regular", sans-serif;
+    scroll-behavior: smooth;
+}
+
+p{
+    font-size: 15px;
+    line-height: 20px;
+}
+
+:root{
+    --dark-color: #181818;
+    /* --light-color: #fcffff; */
+
+    /* --dark-container: #3333336b; */
+    /* --light-container: #faffffda; */
+
+}
+ul li {
+    list-style: none;
+}
+a{
+    text-decoration: none;
+}
+
+.container{
+    width: 100dvw;
+    height: 100dvh;
+    background-color: var(--dark-color);
+    overflow: hidden;
+    position: relative;
+}
+
+.divBlur{
+    position: absolute;
+    width: 500px;
+    height: 500px;
+    background-color: #fcca242a;
+    border-radius: 50%;
+    pointer-events: none;
+    filter: blur(250px);
+    transition: left 0.1s linear, top 0.1s linear;
+}
+
+/* .container::before{
+    content: '';
+    position: absolute;
+    width: 500px;
+    height: 500px;
+    background: radial-gradient(var(--clr), transparent);
+    border-radius: 50%;
+} */
+.here-container{
+    width: 1100px;
+    height: 93vh;
+    background-color: var(--dark-container);
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    border-radius: 7px;
+    overflow: hidden;
+    /* border: 1px solid #40404082; */
+}
+.parentContent{
+    display: flex;
+}
+
+/* content  */
+.navBar{
+    width: 40%;
+    /* background-color: gray; */
+    height: 93vh;
+    /* height: 93vh; */
+    display: flex;
+    justify-content: space-between;
+    align-items: star;
+    flex-direction: column;
+    padding: 20px 40px;
+}
+.identity h1 {
+    font-family: "calibri-bold", sans-serif;
+    color: #dddddd;;
+    font-size: 40px;
+    /* text-transform: uppercase; */
+}
+.identity h3{
+    color: #dddddd;
+    font-size: 18px;
+    margin-bottom: 5px;
+    font-family: "calibri-regular", sans-serif;
+    
+}
+.singleContainerArea{
+    height: 93vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: -10px;
+}
+.singleContainerArea h1{
+    font-family: "calibri-bold", sans-serif
+}
+.singleContainerArea p{
+    margin-top: 10px;
+    color: #c5c5c5;
+    text-align: justify;
+}
+.identity p{
+    color: #a3a3a3;
+    line-height: 20px;
+    /* width: 75%; */
+    font-weight: 500;
+}
+.middleContent ul li {
+    line-height: 30px;
+}
+.middleContent ul li.active i,
+.middleContent ul li.active a{
+    color: #dddddd;
+}
+/* .middleContent ul li.active i{
+    font-size: 9px;
+} */
+.middleContent ul li.active a{
+    font-size: 16px;
+}
+.middleContent ul li a{
+    color: #a3a3a3;
+    font-weight: 500;
+    margin-left: 5px;
+    font-size: 15px;
+}
+.middleContent ul li{
+    display: flex;
+    align-items: center;
+}
+.middleContent ul li i {
+    font-size: 8px;
+    color: #a3a3a3;
+}
+.contact ul{
+    display: flex;
+}
+.contact ul li a {
+    display: block;
+    color: #dddddd;
+    padding: 10px;
+}
+
+.mainContentArea{
+    width: 55%;
+    /* background-color: gray; */
+    height: 93vh;
+    /* overflow-y: scroll; */
+    overflow-y: hidden;
+    padding: 20px;
+    color: #c4c4c4;
+    -ms-overflow-style: none;  /* IE and Edge */
+    scrollbar-width: none;  /* Firefox */
+}
+.mainContentArea::-webkit-scrollbar{
+    display: none;
+    width: 0px;
+}
