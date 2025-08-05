@@ -28,16 +28,12 @@
 
 p{
     font-size: 15px;
-    line-height: 20px;
+    line-height: 22px;
 }
 
 :root{
     --dark-color: #181818;
     /* --light-color: #fcffff; */
-
-    /* --dark-container: #3333336b; */
-    /* --light-container: #faffffda; */
-
 }
 ul li {
     list-style: none;
@@ -65,14 +61,6 @@ a{
     transition: left 0.1s linear, top 0.1s linear;
 }
 
-/* .container::before{
-    content: '';
-    position: absolute;
-    width: 500px;
-    height: 500px;
-    background: radial-gradient(var(--clr), transparent);
-    border-radius: 50%;
-} */
 .here-container{
     width: 1100px;
     height: 93vh;
@@ -83,7 +71,6 @@ a{
     transform: translate(-50%, -50%);
     border-radius: 7px;
     overflow: hidden;
-    /* border: 1px solid #40404082; */
 }
 .parentContent{
     display: flex;
@@ -92,9 +79,7 @@ a{
 /* content  */
 .navBar{
     width: 40%;
-    /* background-color: gray; */
     height: 93vh;
-    /* height: 93vh; */
     display: flex;
     justify-content: space-between;
     align-items: star;
@@ -105,7 +90,6 @@ a{
     font-family: "calibri-bold", sans-serif;
     color: #dddddd;;
     font-size: 40px;
-    /* text-transform: uppercase; */
 }
 .identity h3{
     color: #dddddd;
@@ -128,11 +112,12 @@ a{
     margin-top: 10px;
     color: #c5c5c5;
     text-align: justify;
+    font-size: 17px;
+    line-height: 21px;
 }
 .identity p{
     color: #a3a3a3;
     line-height: 20px;
-    /* width: 75%; */
     font-weight: 500;
 }
 .middleContent ul li {
@@ -142,9 +127,6 @@ a{
 .middleContent ul li.active a{
     color: #dddddd;
 }
-/* .middleContent ul li.active i{
-    font-size: 9px;
-} */
 .middleContent ul li.active a{
     font-size: 16px;
 }
@@ -173,9 +155,7 @@ a{
 
 .mainContentArea{
     width: 55%;
-    /* background-color: gray; */
     height: 93vh;
-    /* overflow-y: scroll; */
     overflow-y: hidden;
     padding: 20px;
     color: #c4c4c4;
