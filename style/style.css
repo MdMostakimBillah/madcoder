@@ -109,7 +109,7 @@ a{
     font-family: "calibri-bold", sans-serif
 }
 .singleContainerArea p{
-    margin-top: 10px;
+    margin-top: 15px;
     color: #c5c5c5;
     text-align: justify;
     font-size: 17px;
@@ -218,3 +218,18 @@ a{
 .meImage img{
     width: 100%;
 } */
+
+.projectItems {
+    margin-top: 20px;
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(30%, 1fr));
+    gap: 10px;
+}
+.singleProject{
+    border: 1px solid rgb(58, 58, 58);
+    padding: 20px 20px;
+    background-color: #181818;
+    text-align: center;
+    border-radius: 7px;
+    cursor: pointer;
+}
