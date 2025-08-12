@@ -115,6 +115,9 @@ a{
     font-size: 17px;
     line-height: 21px;
 }
+.singleContainerArea p b{
+    color: #d8d8d8;
+}
 .identity p{
     color: #a3a3a3;
     line-height: 20px;
@@ -123,19 +126,6 @@ a{
 .middleContent ul li {
     line-height: 30px;
 }
-/* .middleContent ul li.active i{
-    color: #dddddd;
-    transition: 0.2s linear;
-} */
-/* .middleContent ul li.active a{
-    color: #dddddd;
-    transition: 0.2s linear;
-    font-family: 'calibri-bold';
-}
-.middleContent ul li.active a{
-    transition: 0.2s linear;
-    font-family: 'calibri-bold';
-} */
 
 .active i{
     color: #dddddd !important; 
@@ -184,29 +174,32 @@ a{
     width: 0px;
 }
 
-
-
-/* hover details  */
-/* .personalId{
-    position: relative;
-}  */
-
-/* .Identity {
+.profile {
     position: absolute;
-    margin-top: -500px;
+    top: 50%;
+    left: 50%;
     text-align: center;
     width: 250px;
-    background-color: transparent;
-    backdrop-filter: blur(5px);
-    padding: 10px;
+    background-color: #181818;
+    padding: 20px 10px;
     border-radius: 5px;
     z-index: 9999;
     border: 1px solid rgba(156, 156, 156, 0.514);
+    user-select: none;
+    transition: 0.1s linear;
+    transform: translate(-50%, -50%) scale(0);
 }
-.Identity p{
+.showPopup{
+    transform: translate(-50%, -50%) scale(1) !important;
+    margin-top: 3px;
+    transition: 0.2s linear;
+}
+.profile p{
     color: #dddddd;
     text-align: center !important;
-    line-height: 12px;
+    /* line-height: 12px; */
+    font-size: 16px;
+    margin-bottom: 5px;
 }
 
 .meImage {
@@ -214,10 +207,11 @@ a{
     margin: 0 auto;
     border-radius: 50%;
     overflow: hidden;
+    margin-bottom: 20px;
 }
 .meImage img{
     width: 100%;
-} */
+} 
 
 .projectItems {
     margin-top: 20px;
@@ -232,4 +226,9 @@ a{
     text-align: center;
     border-radius: 7px;
     cursor: pointer;
+    transition: 0.3s linear;
+    transform: rotate(0deg);
+}
+.singleProject:hover{
+    transform: rotate(5deg);
 }
