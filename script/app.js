@@ -31,3 +31,15 @@ document.addEventListener("mousedown", function (e) {
     popup.classList.remove("showPopup");
   }
 });
+
+
+let noteBook = document.querySelector("#NoteBook");
+let noteBookView = document.querySelector(".NoteBook");
+let closeView = document.querySelector(".closeIcon");
+noteBook.addEventListener('click', function () {
+    noteBookView.classList.toggle("showView");
+});
+
+closeView.addEventListener('click', function () {
+    noteBookView.classList.toggle("showView");
+})
