@@ -42,6 +42,8 @@ let temperatureConverterView = document.querySelector(".temperatureConverter");
 let MomentCloneView = document.querySelector(".MomentClone");
 let ShopeStyleCloneView = document.querySelector(".ShopeStyleClone");
 let couveeCloneView = document.querySelector(".couveeClone");
+let HealthCareView = document.querySelector(".HealthCare");
+
 
 let txtContent = document.querySelector(".here-container");
 let closeView = document.querySelector(".closeIcon");
@@ -65,6 +67,8 @@ function ClassListAddingFunction(x) {
         ShopeStyleCloneView.classList.add("showView");
     }else if(x == 9) {
         couveeCloneView.classList.add("showView");
+    }else if( x == 10) {
+        HealthCareView.classList.add("showView");
     }
 }
 
@@ -89,6 +93,8 @@ function closePopup(x) {
         ShopeStyleCloneView.classList.remove("showView");
     }else if(x == 9) {
         couveeCloneView.classList.remove("showView");
+    }else if( x == 10) {
+        HealthCareView.classList.remove("showView");
     }
 }
 

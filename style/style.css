@@ -263,6 +263,7 @@ a{
 .MomentClone,
 .ShopeStyleClone,
 .couveeClone,
+.HealthCare,
 .ToDo{
     position: absolute;
     top: -100%;
@@ -279,6 +280,7 @@ a{
     border-radius: 50%;
     transition: 0.3s linear;        
 }
+.HealthCare,
 .schoolManagement{
     background-color: #fff;
 }
