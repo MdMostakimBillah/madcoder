@@ -33,13 +33,57 @@ document.addEventListener("mousedown", function (e) {
 });
 
 
-let noteBook = document.querySelector("#NoteBook");
 let noteBookView = document.querySelector(".NoteBook");
-let closeView = document.querySelector(".closeIcon");
-noteBook.addEventListener('click', function () {
-    noteBookView.classList.toggle("showView");
-});
+let GuessNumberGameView = document.querySelector(".GuessNumberGame");
+let ColorBundleView = document.querySelector(".ColorBundle");
+let ToDoView = document.querySelector(".ToDo");
+let schoolManagementView = document.querySelector(".schoolManagement");
+let temperatureConverterView = document.querySelector(".temperatureConverter");
+let MomentCloneView = document.querySelector(".MomentClone");
+let ShopeStyleCloneView = document.querySelector(".ShopeStyleClone");
 
-closeView.addEventListener('click', function () {
-    noteBookView.classList.toggle("showView");
-})
+let txtContent = document.querySelector(".here-container");
+let closeView = document.querySelector(".closeIcon");
+
+function ClassListAddingFunction(x) {
+    if (x == 1) {
+        noteBookView.classList.add("showView");
+    }else if (x == 2) {
+        ToDoView.classList.add("showView");
+    }else if(x == 3) {
+        ColorBundleView.classList.add("showView");
+    }else if(x == 4){
+        GuessNumberGameView.classList.add("showView");
+    }else if(x == 5){
+        schoolManagementView.classList.add("showView");
+    }else if (x == 6) {
+        temperatureConverterView.classList.add("showView");
+    }else if(x == 7) {
+        MomentCloneView.classList.add("showView");
+    }else if(x == 8) {
+        ShopeStyleCloneView.classList.add("showView");
+    }
+}
+
+
+
+function closePopup(x) {
+    if(x == 1){
+        noteBookView.classList.remove("showView");  
+    }else if (x == 2) {
+        ToDoView.classList.remove("showView");
+    }else if(x == 3) {
+        ColorBundleView.classList.remove("showView");
+    }else if(x == 4){
+        GuessNumberGameView.classList.remove("showView");
+    }else if(x == 5){
+        schoolManagementView.classList.remove("showView");
+    }else if (x == 6) {
+        temperatureConverterView.classList.remove("showView");
+    }else if(x == 7) {
+        MomentCloneView.classList.remove("showView");
+    }else if(x == 8) {
+        ShopeStyleCloneView.classList.remove("showView");
+    }
+}
+
