@@ -1,0 +1,54 @@
+---
+import Base from "../layouts/Base.astro";
+import AboutSection from "../components/AboutSection.jsx";
+import EducationSection from "../components/EducationSection.jsx";
+import ExperienceSection from "../components/ExperienceSection.jsx";
+import Footer from "../components/Footer.jsx";
+import Glow from "../components/Glow.jsx";
+import Motion from "../components/Motion.jsx";
+import ProfileCard from "../components/ProfileCard.jsx";
+import ProjectsSection from "../components/ProjectsSection.jsx";
+import Sidebar from "../components/Sidebar.jsx";
+import SkillsSection from "../components/SkillsSection.jsx";
+---
+
+<Base>
+  <div class="relative">
+    <Glow client:load />
+
+    <a href="#main" class="skip-link">Skip to content</a>
+
+    <!--
+      Normal document scroll: the page itself scrolls (no inner viewport),
+      so sections size to their content instead of filling a screen.
+
+      `pt-24` on small screens clears the fixed pair of glass pills;
+      `lg:pt-0` hands the top spacing back to the rail's own `py-14`.
+      Bottom clearance for the floating tab bar lives on the Footer.
+    -->
+    <div
+      class="relative z-10 mx-auto w-full max-w-[1000px] px-5 pt-24 sm:px-8 lg:px-12 lg:pt-0"
+    >
+      <!-- One row of two columns: the sticky rail and the content. -->
+      <div class="grid grid-cols-1 lg:grid-cols-[19rem_minmax(0,1fr)] lg:gap-x-16">
+        <Sidebar client:load />
+
+        <main id="main">
+          <AboutSection />
+          <ProjectsSection client:load />
+          <ExperienceSection />
+          <EducationSection />
+          <SkillsSection />
+
+          <Footer />
+        </main>
+      </div>
+    </div>
+
+    <ProfileCard client:load />
+
+    <!-- Loads gsap after hydration, then reveals every block and binds the
+         hovers. Returns null — it owns no DOM of its own. -->
+    <Motion client:load />
+  </div>
+</Base>
