@@ -1,0 +1,355 @@
+@import "tailwindcss";
+
+/* Class-driven dark mode. Tailwind's built-in `dark:` variant keys off
+   `prefers-color-scheme`, but we need manual control so an explicit choice
+   survives reloads — so it is re-pointed at <html class="dark">. */
+@custom-variant dark (&:where(.dark, .dark *));
+
+/* ------------------------------------------------------------------ *
+ * Fonts — subset to Latin, ~24 KB each, WOFF2, cached forever.
+ *
+ * The @font-face rules live in src/layouts/Base.astro, not here: a
+ * root-relative url("/fonts/...") in CSS is rebased by the production
+ * build but NOT by the dev server, which then 404s under /madcoder.
+ * The layout builds the URL with asset(), so dev and build agree.
+ * ------------------------------------------------------------------ */
+
+/* ------------------------------------------------------------------ *
+ * Design tokens — warm paper, ink, one amber accent.
+ * ------------------------------------------------------------------ */
+@theme {
+  --color-paper: #faf8f4;
+  --color-paper-raised: #fffefb;
+  --color-ink: #14110d;
+  --color-ink-soft: #4a453d;
+  /* Neutral-leaning grey for secondary copy — 5.06:1 on paper, so it
+     reads grey without dropping below WCAG AA (unlike --color-muted). */
+  --color-ash: #6f6a61;
+  --color-muted: #8b8479;
+  --color-rule: #e2ddd3;
+  --color-amber: #fcca24;
+  --color-amber-deep: #d9a600;
+  /* Text that sits *on* amber. Amber is bright in both themes, so this
+     never flips — pairing it with --color-ink would put pale ink on amber
+     in dark mode (1.36:1). */
+  --color-amber-ink: #14110d;
+
+  --font-sans: "Calibri", ui-sans-serif, system-ui, -apple-system, "Segoe UI",
+    Roboto, sans-serif;
+  --font-mono: ui-monospace, "SFMono-Regular", "JetBrains Mono", Menlo, monospace;
+
+  --ease-editorial: cubic-bezier(0.22, 0.61, 0.36, 1);
+}
+
+/* ------------------------------------------------------------------ *
+ * Base
+ * ------------------------------------------------------------------ */
+@layer base {
+  html {
+    scroll-behavior: smooth;
+    /* Sections are each at least a viewport tall and snap-aligned, so one
+       section owns the screen at a time — the neighbour's header can never
+       peek in. Mandatory lands every gesture on a section start. */
+    scroll-snap-type: y mandatory;
+    -webkit-text-size-adjust: 100%;
+    color-scheme: light;
+  }
+
+  body {
+    background-color: var(--color-paper);
+    color: var(--color-ink);
+    font-family: var(--font-sans);
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    text-rendering: optimizeLegibility;
+  }
+
+  /* Amber on paper is too light for an outline — use ink, amber on dark. */
+  :focus-visible {
+    outline: 2px solid var(--color-ink);
+    outline-offset: 3px;
+    border-radius: 2px;
+  }
+
+  /* Card lift. Declared here rather than in `@theme`: Tailwind's `shadow-*`
+     utility inlines theme values as a literal fallback, which would freeze the
+     colour in light mode — referencing the property by name keeps it live. */
+  :root {
+    --shadow-card: 0 18px 50px -20px rgb(20 17 13 / 0.35);
+  }
+
+  ::selection {
+    background: var(--color-amber);
+    /* Not var(--color-ink): amber needs dark type in *both* themes. */
+    color: var(--color-amber-ink);
+  }
+
+  /* The page scrolls normally now, so smooth hash navigation rides on
+     `html { scroll-behavior: smooth }` alone — no inner viewport, no
+     hidden scrollbar, the native one comes back. */
+  h1,
+  h2,
+  h3 {
+    text-wrap: balance;
+  }
+}
+
+/* ------------------------------------------------------------------ *
+ * Type scale — fluid, so nothing needs a media query.
+ * ------------------------------------------------------------------ */
+@utility type-display {
+  font-size: clamp(2.6rem, 7vw, 5rem);
+  line-height: 0.95;
+  letter-spacing: -0.035em;
+  font-weight: 700;
+}
+
+@utility type-section {
+  font-size: clamp(1.5rem, 2.6vw, 2rem);
+  line-height: 1.08;
+  letter-spacing: -0.025em;
+  font-weight: 700;
+}
+
+@utility type-lead {
+  font-size: clamp(1.0625rem, 1.5vw, 1.1875rem);
+  line-height: 1.62;
+}
+
+@utility type-body {
+  font-size: 1.0625rem;
+  line-height: 1.68;
+}
+
+@utility type-eyebrow {
+  /* Matches the body face (image reference) rather than the mono stack —
+     the eyebrow keeps its own size, weight, case and tracking. */
+  font-family: var(--font-sans);
+  font-size: 0.6875rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.2em;
+}
+
+/* Card lift — reads --shadow-card so `.dark` can re-point the colour. */
+@utility card-shadow {
+  box-shadow: var(--shadow-card);
+}
+
+/* ------------------------------------------------------------------ *
+ * Cursor glow — a soft radial gradient moved with `transform` only.
+ * No `filter: blur()`, no `left/top`: nothing here triggers layout or
+ * paint, it is composited on the GPU.
+ *
+ * Split across two elements on purpose: the JS spring writes `transform`
+ * (position + speed swell) on `.glow-layer`, while the slow idle pulse
+ * animates `transform` on the child `.glow-core` — two layers, so the
+ * two animations never contend for the same property.
+ * ------------------------------------------------------------------ */
+@utility glow-layer {
+  position: absolute;
+  inset: 0 auto auto 0;
+  width: 34rem;
+  height: 34rem;
+  transform: translate3d(-100vw, -100vh, 0);
+  will-change: transform;
+  transition: opacity 0.5s var(--ease-editorial);
+}
+
+@utility glow-core {
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  background: radial-gradient(
+    circle closest-side,
+    rgb(252 202 36 / 0.22),
+    rgb(252 202 36 / 0.1) 45%,
+    rgb(252 202 36 / 0) 72%
+  );
+  animation: glow-breathe 7s ease-in-out infinite;
+}
+
+/* Idle life: the bloom slowly swells and dims, like embers. */
+@keyframes glow-breathe {
+  0%,
+  100% {
+    transform: scale(1);
+    opacity: 0.9;
+  }
+  50% {
+    transform: scale(1.06);
+    opacity: 1;
+  }
+}
+
+/* ------------------------------------------------------------------ *
+ * Reveal on scroll — GSAP owns the animation (Motion.jsx).
+ *
+ * Gated on `.motion`, added by an inline head script *before first paint*.
+ * The motion layer arrives by dynamic import, so the hiding has to happen
+ * first: otherwise the copy is already on screen when GSAP asks it to hide
+ * and the entrance reads as a blink. Gating also means a no-JS visitor
+ * never gets the hidden state, so nothing can be lost behind an animation
+ * that never runs — and the head script arms a timeout that drops the
+ * class if the motion chunk never boots.
+ *
+ * The selectors below MUST match REVEALS in Motion.jsx: this rule hides the
+ * elements, Motion.jsx writes the same state inline, then drops `.motion`.
+ * Each reveal finishes with `clearProps`, so everything settles on its
+ * exact layout position. y (1.5rem) matches HIDDEN_Y there.
+ *
+ * One rule per element, never nested: a paragraph inside an animated
+ * wrapper would fade twice and land late.
+ * ------------------------------------------------------------------ */
+@layer components {
+  .motion
+    :is(
+      [data-reveal],
+      main section header,
+      main p,
+      main h3,
+      main .grid > a,
+      main footer a
+    ) {
+    opacity: 0;
+    transform: translateY(1.5rem);
+  }
+}
+
+/* ------------------------------------------------------------------ *
+ * Timeline guard
+ *
+ * The experience and education rows are two columns — label | text —
+ * above the `sm:` / `lg:` breakpoints. Those are *viewport* widths, but
+ * the row lives in a box the viewport doesn't measure: the rail eats
+ * 272px, so a row can sit in a far narrower column than its viewport
+ * suggests. When that happens `minmax(0, 1fr)` is free to resolve to
+ * nothing and the paragraph breaks one word per line.
+ *
+ * This query runs against the row's own container (the `.timeline` list
+ * carries `container-type`), so it answers the only question that
+ * matters: is there room for a readable measure in *this* box?
+ *
+ * Two things make it win over `sm:grid-cols-*`: it is unlayered, above
+ * the utility layer, and `.timeline > li` out-scores a single class. It
+ * cannot disturb normal rendering either — two-column rows are always at
+ * least 568px wide here, comfortably clear of the 31rem floor — so it
+ * only ever fires when the layout has already gone wrong.
+ * ------------------------------------------------------------------ */
+@container (max-width: 31rem) {
+  .timeline > li {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 0.5rem;
+  }
+}
+
+/* ------------------------------------------------------------------ *
+ * Skip link
+ * ------------------------------------------------------------------ */
+@utility skip-link {
+  position: fixed;
+  top: 0.75rem;
+  left: 50%;
+  z-index: 100;
+  translate: -50% -200%;
+  padding: 0.6rem 1rem;
+  background: var(--color-ink);
+  color: var(--color-paper);
+  font-size: 0.875rem;
+  transition: translate 0.2s var(--ease-editorial);
+}
+
+/* Unlayered so it beats the utility layer above — reveal on keyboard focus. */
+.skip-link:focus {
+  translate: -50% 0;
+}
+
+/* ------------------------------------------------------------------ *
+ * Overlay motion
+ * ------------------------------------------------------------------ */
+@keyframes overlay-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes sheet-in {
+  from {
+    opacity: 0;
+    transform: translateY(0.75rem) scale(0.96);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@utility animate-overlay {
+  animation: overlay-in 0.22s var(--ease-editorial) both;
+}
+
+@utility animate-sheet {
+  animation: sheet-in 0.32s var(--ease-editorial) both;
+}
+
+/* Respect users who ask for less motion — kills the glow and all easing. */
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    transition-delay: 0ms !important;
+  }
+
+  .glow-layer {
+    display: none;
+  }
+}
+
+/* ------------------------------------------------------------------ *
+ * Dark palette.
+ *
+ * Unlayered on purpose: `@theme` emits its tokens into `@layer theme`,
+ * and an unlayered rule outranks every layered one — so overriding the
+ * custom properties here beats the `:root` declaration without needing
+ * `!important` or a specificity trick. Because every colour utility in
+ * the markup resolves through `var(--color-*)`, that single swap
+ * restyles the whole site.
+ *
+ * Contrast on #16130f (WCAG AA needs 4.5:1 for body copy):
+ *   ink 16.29 · ink-soft 10.69 · ash 7.22 · muted 5.13 ·
+ *   amber-deep 9.90 · rule 1.38 (hairline, decorative only)
+ * ------------------------------------------------------------------ */
+.dark {
+  color-scheme: dark;
+  --color-paper: #16130f;
+  --color-paper-raised: #1f1b16;
+  --color-ink: #f4f0e8;
+  --color-ink-soft: #cbc4b7;
+  --color-ash: #a8a194;
+  --color-muted: #8d867a;
+  --color-rule: #332e26;
+  --color-amber: #fcca24;
+  --color-amber-deep: #f0b400;
+  --color-amber-ink: #14110d;
+  --shadow-card: 0 18px 50px -20px rgb(0 0 0 / 0.7);
+}
+
+/* The amber bloom reads far hotter against near-black — soften it. */
+.dark .glow-core {
+  background: radial-gradient(
+    circle closest-side,
+    rgb(252 202 36 / 0.14),
+    rgb(252 202 36 / 0.06) 45%,
+    rgb(252 202 36 / 0) 72%
+  );
+}

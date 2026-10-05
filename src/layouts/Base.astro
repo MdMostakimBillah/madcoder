@@ -1,0 +1,167 @@
+---
+import "../styles/global.css";
+import { asset } from "../lib/asset.js";
+import { identity, socials } from "../data/site.js";
+
+const title = `${identity.fullName} — Front-end Developer`;
+const description =
+  "Portfolio of Md Mostakim Billah, an aspiring front-end developer and BSc CSE student. Selected projects, experience, and contact.";
+const ogImage = "https://mdmostakimbillah.github.io/madcoder/img/mostakim.webp";
+
+// @font-face with base-aware URLs — plain CSS can't prefix `base`, and the
+// dev server doesn't rewrite root-relative public paths the way the build
+// does, so this is emitted here instead of in global.css.
+const fontCss = [
+  { weight: "400", file: "fonts/calibri-regular.woff2" },
+  { weight: "700", file: "fonts/calibri-bold.woff2" },
+]
+  .map(
+    ({ weight, file }) => `@font-face {
+  font-family: "Calibri";
+  src: url("${asset(file)}") format("woff2");
+  font-weight: ${weight};
+  font-style: normal;
+  font-display: swap;
+}`,
+  )
+  .join("\n");
+
+// Structured data for search engines and AI crawlers.
+const jsonLd = {
+  "@context": "https://schema.org",
+  "@type": "Person",
+  name: identity.fullName,
+  alternateName: "Mostakim Billah",
+  jobTitle: "Front-end Developer",
+  description: identity.blurb,
+  url: "https://mdmostakimbillah.github.io/madcoder/",
+  image: ogImage,
+  sameAs: socials.filter((social) => social.href.startsWith("http")).map((social) => social.href),
+};
+---
+
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+    <title>{title}</title>
+    <meta name="description" content={description} />
+    <meta name="author" content={identity.fullName} />
+    <meta name="color-scheme" content="light dark" />
+    <meta name="theme-color" content="#faf8f4" media="(prefers-color-scheme: light)" />
+    <meta name="theme-color" content="#16130f" media="(prefers-color-scheme: dark)" />
+
+    <!--
+      Reveal-on-scroll is styled only under `.motion`, so it must be set
+      before first paint: the motion layer is imported after hydration, and
+      without an earlier hiding the copy would already be on screen when GSAP
+      asked it to hide — a visible blink.
+
+      No JS (this never runs) or prefers-reduced-motion: the class is never
+      added and everything renders visible. The timeout is the failsafe —
+      if the motion chunk never boots, it drops the class so nothing can be
+      left hidden behind an animation that never runs. Motion.jsx stands it
+      down the moment it takes over.
+    -->
+    <script is:inline>
+      if (!window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+        document.documentElement.classList.add("motion");
+        window.__motionFail = setTimeout(function () {
+          document.documentElement.classList.remove("motion");
+        }, 4000);
+      }
+    </script>
+
+    <!--
+      Resolve the theme before the stylesheet is applied, let alone before
+      first paint: the class must be on <html> by the time anything renders or
+      the page flashes white on every dark-mode load. Kept inline and tiny
+      (no fetch) so it cannot race the render.
+    -->
+    <script is:inline>
+      (function () {
+        var LIGHT = "#faf8f4";
+        var DARK = "#16130f";
+        var stored = null;
+        try {
+          stored = localStorage.getItem("theme");
+        } catch (e) {
+          /* storage unavailable (private mode) — fall back to the OS */
+        }
+        var mq = window.matchMedia("(prefers-color-scheme: dark)");
+        var dark = stored ? stored === "dark" : mq.matches;
+
+        function paint(isDark) {
+          document.documentElement.classList.toggle("dark", isDark);
+          var metas = document.querySelectorAll('meta[name="theme-color"]');
+          if (!metas.length) return;
+          // Collapse the light/dark pair (which covers no-JS) into one
+          // resolved value, so the browser never has to guess.
+          for (var i = 1; i < metas.length; i++) metas[i].remove();
+          metas[0].removeAttribute("media");
+          metas[0].setAttribute("content", isDark ? DARK : LIGHT);
+        }
+
+        paint(dark);
+
+        // No explicit choice yet? Keep following the OS if it changes.
+        mq.addEventListener("change", function (e) {
+          try {
+            if (localStorage.getItem("theme")) return;
+          } catch (err) {}
+          paint(e.matches);
+        });
+      })();
+    </script>
+
+    <!-- Search / social -->
+    <meta property="og:type" content="website" />
+    <meta property="og:title" content={title} />
+    <meta property="og:description" content={description} />
+    <meta property="og:image" content={ogImage} />
+    <meta name="twitter:card" content="summary_large_image" />
+
+    <link rel="icon" href={asset("favicon.svg")} type="image/svg+xml" />
+
+    <style is:inline set:html={fontCss} />
+
+    <!-- Fonts are 24 KB each; preload both so text renders immediately (font-display: swap). -->
+    <link
+      rel="preload"
+      href={asset("fonts/calibri-regular.woff2")}
+      as="font"
+      type="font/woff2"
+      crossorigin
+    />
+    <link
+      rel="preload"
+      href={asset("fonts/calibri-bold.woff2")}
+      as="font"
+      type="font/woff2"
+      crossorigin
+    />
+
+    <!-- Portrait sits in the glass pill on small screens only (hidden at
+         lg+), so it is preloaded for that breakpoint alone. -->
+    <link
+      rel="preload"
+      href={asset("img/mostakim.webp")}
+      as="image"
+      media="(max-width: 1023px)"
+    />
+
+    <script type="application/ld+json" set:html={JSON.stringify(jsonLd)} />
+
+    <!-- Static builds freeze the year at build time; refresh it on every visit. -->
+    <script is:inline>
+      document.querySelectorAll("[data-year]").forEach((el) => {
+        el.textContent = String(new Date().getFullYear());
+      });
+    </script>
+  </head>
+  <body>
+    <slot />
+  </body>
+</html>
