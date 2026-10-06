@@ -12,6 +12,7 @@ import {
   socialIcons,
 } from "./Icons.jsx";
 import ThemeToggle from "./ThemeToggle.jsx";
+import LiquidGlass from "./LiquidGlass.jsx";
 
 const NAV_IDS = navItems.map((item) => item.id);
 const CV_URL = asset(CV_FILE);
@@ -127,7 +128,12 @@ export default function Sidebar() {
         {/* ── mobile, left pill: logo + name + profession. `flex-1` so the
              card stretches to sit just beside the action pill on the right
              instead of hugging its own text. ── */}
-        <div
+        {/* ── mobile, left pill: logo + name + profession. `flex-1` so the
+             card stretches to sit just beside the action pill on the right
+             instead of hugging its own text. LiquidGlass swaps the old
+             one-level frosted background for the layered material at
+             ≤768px only — see .glass-shell in global.css. ── */}
+        <LiquidGlass
           data-reveal
           className="pointer-events-auto flex min-w-0 flex-1 items-center gap-2.5 rounded-full border border-white/50 bg-paper/70 py-1.5 pl-1.5 pr-4 shadow-[0_16px_40px_-16px_rgb(20_17_13/0.5)] backdrop-blur-xl backdrop-saturate-150 dark:border-white/10 lg:hidden"
         >
@@ -151,10 +157,10 @@ export default function Sidebar() {
               {identity.role}
             </span>
           </div>
-        </div>
+        </LiquidGlass>
 
         {/* ── mobile, right pill: CV download + theme switch ── */}
-        <div
+        <LiquidGlass
           data-reveal
           className="pointer-events-auto flex shrink-0 items-center gap-1 rounded-full border border-white/50 bg-paper/70 py-1.5 pl-2.5 pr-1.5 shadow-[0_16px_40px_-16px_rgb(20_17_13/0.5)] backdrop-blur-xl backdrop-saturate-150 dark:border-white/10 lg:hidden"
         >
@@ -171,7 +177,7 @@ export default function Sidebar() {
           <span aria-hidden="true" className="h-5 w-px bg-rule" />
 
           <ThemeToggle className="rounded-full" />
-        </div>
+        </LiquidGlass>
 
         {/* ── top: identity (desktop rail only — mobile carries it in the
              glass pill above) ── */}
@@ -320,13 +326,18 @@ export default function Sidebar() {
         data-reveal
         className="fixed inset-x-0 bottom-0 z-40 flex justify-center px-4 pb-[max(1rem,env(safe-area-inset-bottom))] delay-300 lg:hidden"
       >
-        <ul ref={tabRef} className="relative flex items-center gap-1 rounded-full border border-white/50 bg-paper/70 p-1.5 shadow-[0_16px_40px_-16px_rgb(20_17_13/0.5)] backdrop-blur-xl backdrop-saturate-150 dark:border-white/10">
+        <LiquidGlass
+          as="ul"
+          ref={tabRef}
+          className="relative flex items-center gap-1 rounded-full border border-white/50 bg-paper/70 p-1.5 shadow-[0_16px_40px_-16px_rgb(20_17_13/0.5)] backdrop-blur-xl backdrop-saturate-150 dark:border-white/10"
+        >
           {/* The travelling pill: the active amber background slides
               between tabs instead of each tab flipping its own on — same
               44px, same colour, same 300ms curve, one element in motion.
               Invisible until measured (tabOn), so SSR/no-JS keeps the
               original per-tab pill. Pointer-transparent: taps reach the
-              link layered above it. */}
+              link layered above it. The pill always covers the top 44px
+              of a link — the icon zone — never the label below it. */}
           <span
             aria-hidden="true"
             style={{
@@ -348,7 +359,7 @@ export default function Sidebar() {
                   aria-current={isActive ? "true" : undefined}
                   aria-label={item.label}
                   title={item.label}
-                  className={`relative flex h-11 w-11 items-center justify-center rounded-full transition-all duration-300 ease-out active:scale-95 ${
+                  className={`tab-link relative flex h-11 w-11 items-center justify-center rounded-full transition-all duration-300 ease-out active:scale-95 ${
                     isActive
                       ? ind.tabOn
                         ? "text-amber-ink"
@@ -357,11 +368,16 @@ export default function Sidebar() {
                   }`}
                 >
                   <Icon className="h-5 w-5" />
+                  {/* The section name under the icon: a reserved slot on
+                      every link (so the bar's height never moves), revealed
+                      only for the active tab, and only ≤768px — above that
+                      the base rule keeps it display:none. */}
+                  <span className="tab-label">{item.label}</span>
                 </a>
               </li>
             );
           })}
-        </ul>
+        </LiquidGlass>
       </nav>
     </>
   );

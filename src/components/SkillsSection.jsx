@@ -14,7 +14,10 @@ export default function SkillsSection() {
         {skills.map((group) => (
           <div key={group.category}>
             <h3 className="type-eyebrow text-amber-deep">{group.category}</h3>
-            <ul className="mt-4 grid gap-x-8 gap-y-3 sm:grid-cols-2">
+            {/* gap-x-12 (48px) rather than the house 8: two label+bar pairs
+                side by side need a wider gutter than a card grid, or the
+                left bar's track crowds the right column's label. */}
+            <ul className="mt-4 grid gap-x-12 gap-y-3 sm:grid-cols-2">
               {group.items.map((item) => (
                 <li
                   key={item.name}
@@ -28,7 +31,7 @@ export default function SkillsSection() {
                     className="block h-1.5 overflow-hidden rounded-full bg-rule"
                   >
                     <span
-                      className="block h-full rounded-full bg-amber"
+                      className="skill-fill block h-full rounded-full bg-amber"
                       style={{ width: `${item.level}%` }}
                     />
                   </span>

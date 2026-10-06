@@ -76,6 +76,18 @@
      colour in light mode — referencing the property by name keeps it live. */
   :root {
     --shadow-card: 0 18px 50px -20px rgb(20 17 13 / 0.35);
+
+    /* Liquid glass — the mobile chrome only (≤768px, gated at the end of
+       this file). Every value is theme-aware: `.dark` flips the whole set
+       below, so no component ever has to ask which theme is live. */
+    --glass-tint: rgb(255 255 255 / 0.42);
+    --glass-border: rgb(255 255 255 / 0.62);
+    --glass-highlight: rgb(255 255 255 / 0.85);
+    --glass-inner: rgb(20 17 13 / 0.07);
+    --glass-ambient: 0 16px 40px -16px rgb(20 17 13 / 0.45);
+    --glass-data: rgb(74 69 61 / 0.55);
+    --glass-sheen: rgb(255 255 255 / 0.32);
+    --glass-blur: 14px;
   }
 
   ::selection {
@@ -295,6 +307,24 @@
     opacity: 0;
     transform: translateY(0.75rem);
   }
+
+  /* Skill bars — collapsed until their row arrives (Motion.jsx, `BAR`,
+     writes the identical scaleX(0) back inline before it drops
+     `html.motion`, so the CSS→GSAP handoff is invisible). The two must
+     stay in step: a bar this rule hides that GSAP never animates would be
+     a bar stuck empty.
+     scaleX, not `width: 0` — the fill's inline width *is* the data, and
+     animating it would be the one layout-causing tween in a motion layer
+     otherwise built entirely on transform/opacity.
+     Origin pinned to the left edge: a progress bar fills from its start,
+     not from the middle. */
+  .skill-fill {
+    transform-origin: 0 50%;
+  }
+
+  .motion .skill-fill {
+    transform: scaleX(0);
+  }
 }
 
 /* ------------------------------------------------------------------ *
@@ -423,6 +453,18 @@
   --color-amber-deep: #f0b400;
   --color-amber-ink: #14110d;
   --shadow-card: 0 18px 50px -20px rgb(0 0 0 / 0.7);
+
+  /* Liquid glass on dark: translucent charcoal, never solid black — the
+     data layer has to stay visible *through* the material. The edge
+     highlight is warm white at low alpha: the only thing that reads as
+     "light" on a dark surface. */
+  --glass-tint: rgb(28 25 21 / 0.45);
+  --glass-border: rgb(244 240 232 / 0.16);
+  --glass-highlight: rgb(244 240 232 / 0.3);
+  --glass-inner: rgb(0 0 0 / 0.3);
+  --glass-ambient: 0 16px 40px -16px rgb(0 0 0 / 0.6);
+  --glass-data: rgb(244 240 232 / 0.34);
+  --glass-sheen: rgb(244 240 232 / 0.14);
 }
 
 /* The amber bloom reads far hotter against near-black — soften it. */
@@ -554,5 +596,258 @@
   }
   to {
     transform: scaleY(1);
+  }
+}
+
+/* ------------------------------------------------------------------ *
+ * Liquid glass — SMALL SCREENS ONLY (≤768px)
+ *
+ * Three boxes, because `backdrop-filter` can only ever blur what is
+ * painted *behind* an element — one box could blur the page but never
+ * animate a data field of its own. The shell carries the caller's
+ * layout; behind the surface sit two decoration layers; the surface is
+ * the actual material:
+ *
+ *   glass-shell   layout, rounding, ambient shadow, pointer events
+ *   ├ .glass-data    z:-2 · dot grid + tick lanes, drifting slowly
+ *   ├ .glass-surface z:-1 · backdrop blur+saturate, tint, hairline,
+ *   │                       rim light, sheen (its ::after)
+ *   └ children         paint above the glass: full contrast, never
+ *                       tinted, never blurred
+ *
+ * ── The mobile gate ────────────────────────────────────────────────
+ * Outside the media query the two layers are `display: none` and the
+ * shell keeps every utility class it shipped with — so tablets
+ * (769–1023px) and desktop are byte-identical to before this section
+ * existed. Inside the gate, these unlayered rules outrank Tailwind's
+ * `@layer utilities`, which is how the old single-layer frosted pill
+ * (bg-paper/70 + backdrop-blur-xl + white border) is retired at ≤768
+ * without a single variant in the markup.
+ *
+ * ── Why `z-index: 0`, not `isolation: isolate` ────────────────────
+ * The negative z-indices need a stacking context to stay local, but
+ * `isolation: isolate` forms a *backdrop root* — it would hide the
+ * page from the surface's blur and the glass would sample nothing. A
+ * plain z-index context contains the layers without touching the
+ * backdrop. (Filters, opacity and masks do form backdrop roots; a
+ * z-index context does not.)
+ *
+ * Motion is transform-only, CSS-only: two data layers and the sheen
+ * animate forever; everything else is static. The global
+ * `prefers-reduced-motion` rule collapses them to a single frame —
+ * the sheen's *base* state is parked off-element, so reduced motion
+ * gets no glass reflection at all instead of a frozen one.
+ * ------------------------------------------------------------------ */
+
+/* Base state, before the gate: the layers (and the taskbar label) don't
+   exist above 768px. Declared ahead of the media query on purpose — same
+   specificity, so source order decides, and the gate must win. */
+.glass-data,
+.glass-surface,
+.tab-label {
+  display: none;
+}
+
+@media (max-width: 768px) {
+  .glass-shell {
+    position: relative;
+    z-index: 0;
+    overflow: hidden; /* clip data + sheen to the rounded silhouette */
+    border: none; /* the surface draws the real hairline */
+    background: none; /* tint lives on the surface now */
+    box-shadow: var(--glass-ambient);
+    /* Blank Tailwind's backdrop chain rather than only writing
+       `backdrop-filter: none`: the utilities build their value from these
+       custom properties, and Blink keeps `-webkit-backdrop-filter` as a
+       separate cascade entry — so overriding the standard property alone
+       would still leave the prefixed utility declaration blurring. Only
+       `blur` and `saturate` are ever set by this markup; both declarations
+       then fail to compute and fall back to the initial value: none. */
+    --tw-backdrop-blur: initial;
+    --tw-backdrop-saturate: initial;
+    /* Unprefixed only, deliberately: the build's minifier collapses an
+       alias pair and drops the standard declaration (Tailwind emits its
+       own pairs prefixed-first and survives; ours was reversed and did
+       not). Safari ≤17 then ignores this override and keeps the utility's
+       frosted pill — the pre-glass look, which is exactly the graceful
+       fallback we want for a browser that can't do layered backdrop. */
+    backdrop-filter: none;
+  }
+
+  .glass-data,
+  .glass-surface {
+    display: block;
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    border-radius: inherit;
+  }
+
+  .glass-data {
+    z-index: -2;
+    opacity: 0.5;
+  }
+
+  /* ── The data field ──────────────────────────────────────────────
+     A dot grid sliding one full cell per loop (the translate equals
+     the background-size, so the wrap is invisible), plus three lanes
+     of ticks drifting the other way on a shared 52px tile — also
+     seamless. `inset: -60px` overhangs every edge by more than one
+     full step, so no gap ever opens during the drift. */
+  .glass-data::before {
+    content: "";
+    position: absolute;
+    inset: -60px;
+    background-image: radial-gradient(
+      circle,
+      var(--glass-data) 1px,
+      transparent 1.2px
+    );
+    background-size: 20px 20px;
+    animation: glass-data-drift 45s linear infinite;
+    will-change: transform;
+  }
+
+  .glass-data::after {
+    content: "";
+    position: absolute;
+    inset: -60px;
+    background-image: linear-gradient(
+        90deg,
+        var(--glass-data) 0 12px,
+        transparent 12px
+      ),
+      linear-gradient(90deg, var(--glass-data) 0 7px, transparent 7px),
+      linear-gradient(90deg, var(--glass-data) 0 16px, transparent 16px);
+    background-size: 52px 1.5px, 52px 1.5px, 52px 1.5px;
+    background-repeat: repeat-x, repeat-x, repeat-x;
+    background-position: 0 33%, 0 50%, 0 67%;
+    opacity: 0.7;
+    animation: glass-data-stream 60s linear infinite;
+    will-change: transform;
+  }
+
+  /* ── The material ────────────────────────────────────────────────
+     One backdrop pass (blur 14px + saturate 1.5 — moderate on
+     purpose), a translucent tint, a 1px hairline, and the two rim
+     strokes: highlight along the top edge, the slab's own thickness
+     along the bottom. */
+  .glass-surface {
+    z-index: -1;
+    /* Unprefixed only — see the minifier note on .glass-shell above.
+       Safari ≤17 gets no blur here, but the shell above still carries the
+       utility's frosted backdrop, so old Safari degrades to the original
+       single-layer glass rather than to a flat sticker. */
+    backdrop-filter: blur(var(--glass-blur)) saturate(1.5);
+    background: var(--glass-tint);
+    border: 1px solid var(--glass-border);
+    box-shadow: inset 0 1px 0 0 var(--glass-highlight),
+      inset 0 -1px 0 0 var(--glass-inner);
+  }
+
+  /* Refraction: light pooling where the material curves at the edge.
+     An inset blur reads as thickness for free — no SVG displacement
+     filter, no second backdrop pass. */
+  .glass-surface::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    box-shadow: inset 0 0 12px -5px var(--glass-highlight),
+      inset 0 -8px 12px -9px var(--glass-inner);
+  }
+
+  /* The reflection: one soft band of light crossing the surface every
+     15s. It lives on the surface, inside the glass's negative-z
+     context — so it passes over the material but *under the content*:
+     text is never washed by it. Base state is parked off-element, so
+     when reduced motion collapses the animation the sheen simply
+     doesn't exist rather than freezing mid-sweep. */
+  .glass-surface::after {
+    content: "";
+    position: absolute;
+    top: -60%;
+    bottom: -60%;
+    left: 0;
+    width: 100%;
+    background: linear-gradient(
+      105deg,
+      transparent 25%,
+      var(--glass-sheen) 50%,
+      transparent 75%
+    );
+    transform: translateX(-140%);
+    animation: glass-sheen 15s ease-in-out infinite;
+    will-change: transform;
+    pointer-events: none;
+  }
+
+  /* ── Taskbar: the active section's name, under its icon ──────────
+     Every link takes the same tall shape with a *reserved* label
+     slot, so the bar's height never moves — only the active label's
+     opacity and 4px of offset animate. The icon zone stays exactly
+     44px tall (12px pad + 20px icon), so the travelling pill still
+     lands dead-centre on it. Above 768px the base rule keeps labels
+     at display:none and the utility h-11 keeps links at 44px:
+     tablets see the taskbar exactly as it was. */
+  .tab-link {
+    height: 3.625rem; /* 12 pad + 20 icon + 14 gap + 12 label */
+    flex-direction: column;
+    justify-content: flex-start;
+    padding-top: 0.75rem;
+    border-radius: 0.875rem;
+  }
+
+  .tab-label {
+    display: block;
+    max-width: 100%;
+    margin-top: 14px; /* clears the 44px pill's bottom curve */
+    overflow: hidden;
+    font-size: 9px;
+    line-height: 12px;
+    font-weight: 700;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+    /* Explicitly the theme's ink, NOT the link's inherited amber-ink:
+       the icon sits *on* the amber pill (dark type), the label sits on
+       the glass *below* it and needs full-contrast theme type — amber
+       on light glass is ~2:1 and would fail. */
+    color: var(--color-ink);
+    opacity: 0;
+    transform: translateY(4px);
+    transition: opacity 0.3s ease, transform 0.3s ease;
+    pointer-events: none;
+  }
+
+  .tab-link[aria-current="true"] .tab-label {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@keyframes glass-data-drift {
+  from {
+    transform: translate3d(0, 0, 0);
+  }
+  to {
+    transform: translate3d(-20px, -20px, 0);
+  }
+}
+
+@keyframes glass-data-stream {
+  from {
+    transform: translate3d(0, 0, 0);
+  }
+  to {
+    transform: translate3d(-52px, 0, 0);
+  }
+}
+
+@keyframes glass-sheen {
+  from {
+    transform: translateX(-140%);
+  }
+  to {
+    transform: translateX(340%);
   }
 }

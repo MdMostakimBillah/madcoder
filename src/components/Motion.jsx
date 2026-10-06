@@ -34,7 +34,10 @@ import { useEffect } from "react";
  *
  * ── Selectors ─────────────────────────────────────────────────────────────
  * REVEALS must stay in step with the `html.motion` rule in global.css,
- * which hides the identical set before first paint.
+ * which hides the identical set before first paint. Same contract for BAR:
+ * `.motion .skill-fill` collapses every bar, so this file has to write that
+ * state back inline before the class drops — and every bar it writes must
+ * also get a trigger, or it stays empty forever.
  */
 
 /* Entrance distance in px — deliberately small: motion here should be
@@ -123,6 +126,11 @@ const buildParallax = (gsap, items, scrub) => {
     descendant, so `aside [data-reveal]` would miss it. */
 const RAIL = "[data-reveal]";
 
+/** Skill-bar fills. Their hidden state is scaleX(0) rather than the reveal
+    pair (opacity + y) — the bar's inline width is the data and must survive
+    untouched, so what animates is only the reveal. */
+const BAR = ".skill-fill";
+
 /** Only elements with a box: a `display:none` node has no trigger worth
     making, but a `position:fixed` one (the mobile tab bar) has a real rect
     and `offsetParent === null`, so a null-check on offsetParent would drop it. */
@@ -180,6 +188,11 @@ export default function Motion() {
             ...REVEALS.flatMap(({ sel }) => laidOut(gsap, sel)),
           ];
           gsap.set(targets, { opacity: 0, y: HIDDEN_Y });
+          // Bars carry a *different* hidden state, and it has to land before
+          // the class drops for the same reason: dropping `html.motion` with
+          // only the reveal styles in hand would flash all 15 bars full.
+          const fills = laidOut(gsap, BAR);
+          gsap.set(fills, { scaleX: 0 });
 
           // (4) hand the hidden state over from CSS to GSAP
           document.documentElement.classList.remove("motion");
@@ -237,6 +250,39 @@ export default function Motion() {
             ease: "power3.out",
             clearProps: "opacity,transform",
           });
+
+          // (5d) skill bars — the fill grows to its level as the row
+          // arrives. One trigger per bar on the same 92% line the reveals
+          // use, so no bar ever fills off-screen at a narrow breakpoint
+          // where the section runs taller than the viewport.
+          //
+          // The delay staggers *columns* within each group, and the count
+          // comes from gridTemplateColumns rather than a hard-coded 2: it
+          // reports what this breakpoint actually renders (2-up on sm+, 1-up
+          // below), so a nav jump reads as a left-then-right wave on desktop
+          // and a clean top-to-bottom one on a phone. Landing on #skills by
+          // hash waits its turn behind the rail entrance, like everything
+          // else already on screen.
+          const perGroup = new Map();
+          fills.forEach((el) => {
+            const ul = el.closest("ul");
+            const n = perGroup.get(ul) ?? 0;
+            perGroup.set(ul, n + 1);
+            const cols = getComputedStyle(ul).gridTemplateColumns
+              .trim()
+              .split(/\s+/).length;
+            const inLoad =
+              el.getBoundingClientRect().top < window.innerHeight * 0.92;
+            gsap.to(el, {
+              scaleX: 1,
+              duration: 1,
+              ease: "power2.out",
+              delay: (n % cols) * 0.07 + (inLoad ? LOAD_DELAY : 0),
+              clearProps: "transform",
+              scrollTrigger: { trigger: el, start: "top 92%", once: true },
+            });
+          });
+
           // Hover micro-interactions belong entirely to the markup now:
           // the marker's colour/scale and the label's slide are CSS
           // transitions, so there is no second animator to fight.
