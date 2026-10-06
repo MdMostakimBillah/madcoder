@@ -38,8 +38,10 @@ export const socials = [
 ];
 
 /**
- * Resume targeted by the download icon in the rail.
- * Drop your PDF at `public/cv.pdf` — the file is served from the site
- * root, so no build step is involved.
+ * Resume targeted by the download icon in the rail and the mobile pill.
+ * Live at `public/CV/Com Oper CV.pdf` — served straight from the site
+ * root with no build step, so replacing that file and redeploying is
+ * all it takes to publish a new CV. `asset()` percent-encodes the path,
+ * so names with spaces are safe.
  */
-export const CV_FILE = "cv.pdf";
+export const CV_FILE = "CV/Com Oper CV.pdf";

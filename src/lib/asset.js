@@ -8,5 +8,10 @@
 export const asset = (path) => {
   const base = import.meta.env.BASE_URL.replace(/\/+$/, "");
   const file = String(path).replace(/^\/+/, "");
-  return `${base}/${file}`;
+  // encodeURI turns spaces and other unsafe characters into percent
+  // escapes while leaving the `/` separators alone, so a filename like
+  // `CV/Com Oper CV.pdf` becomes `/CV/Com%20Oper%20CV.pdf`. Pass raw
+  // filenames here — a path that is already encoded would be encoded
+  // a second time.
+  return encodeURI(`${base}/${file}`);
 };
