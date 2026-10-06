@@ -502,6 +502,40 @@
 }
 
 /* ------------------------------------------------------------------ *
+ * Theme reveal — circle growing out of the toggle
+ *
+ * When ThemeToggle finds `document.startViewTransition`, the `.dark` swap
+ * runs inside it and a `clip-path: circle()` is animated across
+ * `::view-transition-new(root)`, so the incoming palette expands from the
+ * icon that was pressed. The UA stylesheet cross-dissolves the two root
+ * snapshots by default, which would smear that edge — so both snapshots are
+ * pinned instead: the outgoing palette holds perfectly still underneath
+ * while the circle uncovers the incoming one over it.
+ *
+ * `root` is the implicit name on `<html>`, and nothing else on the site
+ * claims a `view-transition-name`, so this pseudo-tree exists only for the
+ * ~550ms of a theme flip. `isolation`/`mix-blend-mode` strip the default
+ * compositing so the new view wipes cleanly *over* the old instead of
+ * blending into it, and `display: block` gives the snapshot a real box for
+ * the clip to bite on.
+ *
+ * The reveal itself is a Web Animation (started from JS with a
+ * `pseudoElement` target), not a CSS `animation`, which is why the global
+ * reduced-motion rule can't reach it — ThemeToggle gates on
+ * `prefers-reduced-motion` and takes the crossfade path instead.
+ * ------------------------------------------------------------------ */
+::view-transition-image-pair(root) {
+  isolation: auto;
+}
+
+::view-transition-old(root),
+::view-transition-new(root) {
+  animation: none;
+  mix-blend-mode: normal;
+  display: block;
+}
+
+/* ------------------------------------------------------------------ *
  * Micro-interactions — hover lifts
  *
  * Same design at rest, a little life on contact. Both gates in one media

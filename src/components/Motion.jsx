@@ -83,23 +83,23 @@ const REVEALS = [
 const PARALLAX_DESKTOP = [
   { sel: "main section header h2", y: 14 },
   { sel: "main section [data-parallax]", y: 28 },
-  // The rail — sticky, so it never travels with the scroll. Give it its
-  // own ±5px against the *whole page* instead: "slightly slower than the
-  // content", a few pixels of depth nobody consciously sees. Parent-only
-  // target: its reveal children own their own transforms, and two
-  // animators meet exactly as parent/child, never on one element.
-  { sel: "aside > div", y: 5, page: true },
+  // The rail gets NO parallax, deliberately. It is the anchor: a nav
+  // click smooth-scrolls the page, and a scrubbed drift on the left
+  // column slides the identity block, the nav and the social row
+  // ~10px with it — the whole sidebar "feels moving" for the length of
+  // every jump. Sticky already holds it in place; depth lives in main
+  // only, and the rail's stillness is what makes the scroll read as
+  // *content* moving.
 ];
 
 const PARALLAX_MOBILE = [{ sel: "main section [data-parallax]", y: 16 }];
 
 /**
  * Build the scrubbed drifts for whichever set matches this breakpoint.
- * `page` targets measure against the document rather than their section —
- * the rail is sticky and would otherwise never leave its own start.
+ * Each target measures against its own section.
  */
 const buildParallax = (gsap, items, scrub) => {
-  items.forEach(({ sel, y, page }) => {
+  items.forEach(({ sel, y }) => {
     laidOut(gsap, sel).forEach((el) => {
       gsap.fromTo(
         el,
@@ -108,11 +108,9 @@ const buildParallax = (gsap, items, scrub) => {
           y: -y,
           ease: "none",
           scrollTrigger: {
-            trigger: page
-              ? document.documentElement
-              : el.closest("section") ?? el,
-            start: page ? "top top" : "top bottom",
-            end: page ? "bottom bottom" : "bottom top",
+            trigger: el.closest("section") ?? el,
+            start: "top bottom",
+            end: "bottom top",
             scrub,
           },
         },
