@@ -182,6 +182,15 @@
   }
 }
 
+/* Glow.jsx bails on coarse pointers, so on touch the bloom is *never*
+   shown — but its 34rem layer would keep breathing at 60fps behind the
+   content all the same. Take it out of the compositor entirely. */
+@media (pointer: coarse) {
+  .glow-layer {
+    display: none;
+  }
+}
+
 /* ------------------------------------------------------------------ *
  * Reveal on scroll — GSAP owns the animation (Motion.jsx).
  *

@@ -58,11 +58,43 @@ const REVEALS = [
  *
  * Amplitudes are deliberately small (a fraction of the section padding), so
  * the drift never shows a seam between abutting sections.
+ *
+ * ── Why small screens get a cheaper set ────────────────────────────────────
+ * A scrubbed tween is work GSAP does on *every* scroll frame. Phones pay for
+ * that in dropped frames, and a numeric `scrub` keeps ticking for half a
+ * second after the finger stops. So below `lg` there is one layer instead of
+ * two and `scrub: true` (applied synchronously, no follow-up tween): one
+ * transform write per section per frame, nothing left running at rest. The
+ * two-layer, eased version is desktop-only (PARALLAX_DESKTOP).
  */
-const PARALLAX = [
+const PARALLAX_DESKTOP = [
   { sel: "main section header h2", y: 14 },
   { sel: "main section [data-parallax]", y: 28 },
 ];
+
+const PARALLAX_MOBILE = [{ sel: "main section [data-parallax]", y: 16 }];
+
+/** Build the scrubbed drifts for whichever set matches this breakpoint. */
+const buildParallax = (gsap, items, scrub) => {
+  items.forEach(({ sel, y }) => {
+    laidOut(gsap, sel).forEach((el) => {
+      gsap.fromTo(
+        el,
+        { y },
+        {
+          y: -y,
+          ease: "none",
+          scrollTrigger: {
+            trigger: el.closest("section") ?? el,
+            start: "top bottom",
+            end: "bottom top",
+            scrub,
+          },
+        },
+      );
+    });
+  });
+};
 
 /** Rail chrome reveals on load rather than on scroll — it's always on screen.
     Unscoped on purpose: the mobile tab bar is a *sibling* of <aside>, not a
@@ -87,6 +119,7 @@ export default function Motion() {
 
     let cancelled = false;
     let ctx = null;
+    let mm = null;
     let booted = false;
 
     // (1) We're alive — the head failsafe can stand down.
@@ -110,6 +143,12 @@ export default function Motion() {
       gsap.registerPlugin(ScrollTrigger);
       // The page scrolls the window now — the default scroller, so no
       // ScrollTrigger.defaults() override is needed.
+      //
+      // `ignoreMobileResize`: collapsing the mobile URL bar is a pure
+      // height change that fires `resize` mid-scroll. Without this every
+      // such change re-measures every trigger — the stutter you feel while
+      // scrolling on a phone. Width changes still refresh as they should.
+      ScrollTrigger.config({ ignoreMobileResize: true });
 
       try {
         ctx = gsap.context(() => {
@@ -139,25 +178,16 @@ export default function Motion() {
             });
           });
 
-          // (5b) parallax — scrubbed to scroll position, never triggered once
-          PARALLAX.forEach(({ sel, y }) => {
-            laidOut(gsap, sel).forEach((el) => {
-              gsap.fromTo(
-                el,
-                { y },
-                {
-                  y: -y,
-                  ease: "none",
-                  scrollTrigger: {
-                    trigger: el.closest("section") ?? el,
-                    start: "top bottom",
-                    end: "bottom top",
-                    scrub: 0.5,
-                  },
-                },
-              );
-            });
-          });
+          // (5b) parallax — scrubbed to scroll position, never triggered
+          // once. Matched, not measured: the breakpoint decides how much
+          // work a scroll frame costs (see PARALLAX_* above).
+          mm = gsap.matchMedia();
+          mm.add("(min-width: 1024px)", () =>
+            buildParallax(gsap, PARALLAX_DESKTOP, 0.5),
+          );
+          mm.add("(max-width: 1023px)", () =>
+            buildParallax(gsap, PARALLAX_MOBILE, true),
+          );
 
           // (5c) rail entrance
           const rail = laidOut(gsap, RAIL);
@@ -187,6 +217,7 @@ export default function Motion() {
       cancelled = true;
       // Never got as far as step 4? Make sure nothing stays hidden.
       if (!booted) document.documentElement.classList.remove("motion");
+      mm?.revert();
       ctx?.revert();
     };
   }, []);
