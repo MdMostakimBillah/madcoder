@@ -52,9 +52,26 @@ export const education = [
 
 /**
  * Experience entries: `period` is the label shown in the left column,
- * `body` is the original paragraph.
+ * `body` is the original paragraph. The list renders in array order with
+ * no numbering of its own, so this sequence is deliberate: current roles,
+ * the recent training, then the earlier stints.
  */
 export const experience = [
+  {
+    period: "Current",
+    role: "Accountant & Computer Operator",
+    body: "Manage **accounting, fee collection, student records**, and daily computer operations. Administer the **School Management System**, reports, data entry, and digital records while supporting overall school administration and system management.",
+  },
+  {
+    period: "Current",
+    role: "Mathematics & Science Teacher",
+    body: "I am currently working as a Mathematics and Science teacher at a religious (Deeni) educational institution, backed by **2 years of private coaching** and student teaching experience across many institutions, where I am able to combine my passion for teaching with my commitment to community development and moral values.",
+  },
+  {
+    period: "2 days",
+    role: "AI Skills Training — BRAC",
+    body: "Earned a **Certificate of Completion** for BRAC's **AI Skills Training** programme, a 2-day course run as a joint initiative of the BRAC Education Programme **(BEP)**, BRAC Learning Division **(BLD)** and Social Innovation Lab **(SIL)**. The training is part of the **AI Opportunity Fund: Asia-Pacific** in collaboration with **AVPN**, with support from **Google.org** and the **ADB**.",
+  },
   {
     period: "Freelance",
     role: "Web Developer — Fiverr & Upwork",
@@ -71,24 +88,9 @@ export const experience = [
     body: "Completed a 7-day winter camp with the Bangladesh Army in my collage life **BNCC**, gaining valuable experience in discipline, teamwork, leadership, and resilience in physically and mentally challenging conditions.",
   },
   {
-    period: "2 days",
-    role: "AI Skills Training — BRAC",
-    body: "Earned a **Certificate of Completion** for BRAC's **AI Skills Training** programme, a 2-day course run as a joint initiative of the BRAC Education Programme **(BEP)**, BRAC Learning Division **(BLD)** and Social Innovation Lab **(SIL)**. The training is part of the **AI Opportunity Fund: Asia-Pacific** in collaboration with **AVPN**, with support from **Google.org** and the **ADB**.",
-  },
-  {
     period: "3 months",
     role: "Security Personnel",
     body: "I also served as a **security** personnel for 3 months, a responsibility that greatly enhanced my personal discipline, work ethics, and sense of accountability.",
-  },
-  {
-    period: "Current",
-    role: "Mathematics & Science Teacher",
-    body: "I am currently working as a Mathematics and Science teacher at a religious (Deeni) educational institution, backed by **2 years of private coaching** and student teaching experience across many institutions, where I am able to combine my passion for teaching with my commitment to community development and moral values.",
-  },
-  {
-    period: "Current",
-    role: "Accountant & Computer Operator",
-    body: "Manage **accounting, fee collection, student records**, and daily computer operations. Administer the **School Management System**, reports, data entry, and digital records while supporting overall school administration and system management.",
   },
   {
     period: "Skills",
