@@ -37,7 +37,17 @@ import { useEffect } from "react";
  * which hides the identical set before first paint.
  */
 
-const HIDDEN_Y = 24;
+/* Entrance distance in px — deliberately small: motion here should be
+   felt, not watched, so reveals rise 12px rather than a quarter-inch.
+   Matches translateY(0.75rem) in global.css. */
+const HIDDEN_Y = 12;
+
+/* Elements already on screen at boot hold for the rail entrance — name,
+   subtitle, description, nav — before they start, so the page loads as
+   one choreographed sequence in spec order rather than two animations
+   racing each other. Reels further down the page are unaffected: they
+   compute inLoad as false and receive no delay. */
+const LOAD_DELAY = 0.25;
 
 const REVEALS = [
   { sel: "main section header", dur: 0.9 },
@@ -70,13 +80,23 @@ const REVEALS = [
 const PARALLAX_DESKTOP = [
   { sel: "main section header h2", y: 14 },
   { sel: "main section [data-parallax]", y: 28 },
+  // The rail — sticky, so it never travels with the scroll. Give it its
+  // own ±5px against the *whole page* instead: "slightly slower than the
+  // content", a few pixels of depth nobody consciously sees. Parent-only
+  // target: its reveal children own their own transforms, and two
+  // animators meet exactly as parent/child, never on one element.
+  { sel: "aside > div", y: 5, page: true },
 ];
 
 const PARALLAX_MOBILE = [{ sel: "main section [data-parallax]", y: 16 }];
 
-/** Build the scrubbed drifts for whichever set matches this breakpoint. */
+/**
+ * Build the scrubbed drifts for whichever set matches this breakpoint.
+ * `page` targets measure against the document rather than their section —
+ * the rail is sticky and would otherwise never leave its own start.
+ */
 const buildParallax = (gsap, items, scrub) => {
-  items.forEach(({ sel, y }) => {
+  items.forEach(({ sel, y, page }) => {
     laidOut(gsap, sel).forEach((el) => {
       gsap.fromTo(
         el,
@@ -85,9 +105,11 @@ const buildParallax = (gsap, items, scrub) => {
           y: -y,
           ease: "none",
           scrollTrigger: {
-            trigger: el.closest("section") ?? el,
-            start: "top bottom",
-            end: "bottom top",
+            trigger: page
+              ? document.documentElement
+              : el.closest("section") ?? el,
+            start: page ? "top top" : "top bottom",
+            end: page ? "bottom bottom" : "bottom top",
             scrub,
           },
         },
@@ -163,15 +185,25 @@ export default function Motion() {
           document.documentElement.classList.remove("motion");
           booted = true;
 
-          // (5a) one trigger per element — each lands exactly in place
+          // (5a) one trigger per element — each lands exactly in place.
+          // On boot, anything already in the viewport *waits* its turn:
+          // the rail entrance plays first (name → subtitle → description →
+          // nav), then the main content follows — one ordered sequence,
+          // not two animations racing. Below the fold `inLoad` is false,
+          // so scroll reveals keep their original timing untouched.
           REVEALS.forEach(({ sel, dur, delay, perRow, rowStagger }) => {
             laidOut(gsap, sel).forEach((el, i) => {
+              const inLoad =
+                el.getBoundingClientRect().top < window.innerHeight * 0.92;
               gsap.to(el, {
                 opacity: 1,
                 y: 0,
-                duration: dur,
+                duration: inLoad ? Math.min(dur, 0.52) : dur,
                 ease: "power3.out",
-                delay: (delay ?? 0) + (perRow ? (i % perRow) * rowStagger : 0),
+                delay:
+                  (delay ?? 0) +
+                  (perRow ? (i % perRow) * rowStagger : 0) +
+                  (inLoad ? LOAD_DELAY + Math.min(i, 6) * 0.035 : 0),
                 clearProps: "opacity,transform",
                 scrollTrigger: { trigger: el, start: "top 92%", once: true },
               });
@@ -189,14 +221,19 @@ export default function Motion() {
             buildParallax(gsap, PARALLAX_MOBILE, true),
           );
 
-          // (5c) rail entrance
+          // (5c) rail entrance — the load choreography itself. DOM order
+          // in the rail *is* the spec order: name, subtitle, description,
+          // nav (the mobile pills and tab bar filter in at whichever
+          // breakpoint is live). A tight 60ms stagger over a 450ms fade:
+          // everything has landed by ~740ms, main content trailing just
+          // behind it — present, never competing.
           const rail = laidOut(gsap, RAIL);
           gsap.to(rail, {
             opacity: 1,
             y: 0,
-            duration: 0.75,
-            stagger: 0.12,
-            delay: 0.12,
+            duration: 0.45,
+            stagger: 0.06,
+            delay: 0.05,
             ease: "power3.out",
             clearProps: "opacity,transform",
           });

@@ -141,10 +141,29 @@
  * No `filter: blur()`, no `left/top`: nothing here triggers layout or
  * paint, it is composited on the GPU.
  *
- * Split across two elements on purpose: the JS spring writes `transform`
- * (position + speed swell) on `.glow-layer`, while the slow idle pulse
- * animates `transform` on the child `.glow-core` — two layers, so the
- * two animations never contend for the same property.
+ * Three elements, three owners, so no two animations ever contend:
+ *   .glow-layer    JS      spring — position + speed swell
+ *   .glow-bloom    CSS     the slow idle pulse
+ *   .glow-core ×3  JS      opacity, cross-faded from `--t`
+ *
+ * ── Warm hue travel (light mode) ────────────────────────────────────
+ * Paper is so light that amber at any useful strength washes out, so the
+ * bloom's colour now travels as the cursor sweeps: gold → tangerine →
+ * salmon. Glow.jsx writes a single number, `--t` (0→1, from the *eased*
+ * position so the colour arrives with the glow), and the three cores below
+ * turn it into cross-fading opacities — one custom-property write per frame.
+ * That write costs a style recalc and nothing else: no layout, and no
+ * repaint, because the gradients themselves never change.
+ *
+ * The gradients are pre-baked on purpose: re-colouring a gradient every
+ * frame repaints the layer, cross-fading opacity does not.
+ *
+ * Peak alphas are not a taste call — they are the strongest value that
+ * keeps `--color-ash` body copy (the rail blurb, 5.06:1 on bare paper)
+ * at ≥4.5:1 where the bloom passes behind it. Shoulder stops run at ~55%
+ * of peak, so everything outside the very centre has margin to spare.
+ * Dark mode keeps the original amber bloom untouched: it had the contrast
+ * the light one lacked, and the travel is a remedy for paper, not a theme.
  * ------------------------------------------------------------------ */
 @utility glow-layer {
   position: absolute;
@@ -154,19 +173,72 @@
   transform: translate3d(-100vw, -100vh, 0);
   will-change: transform;
   transition: opacity 0.5s var(--ease-editorial);
+  /* Cursor travel, written by Glow.jsx. Defaults to 0 → amber, which is
+     also what a reduced-motion or touch visitor sees (never unhidden). */
+  --t: 0;
+}
+
+@utility glow-bloom {
+  position: absolute;
+  inset: 0;
+  animation: glow-breathe 7s ease-in-out infinite;
 }
 
 @utility glow-core {
   position: absolute;
   inset: 0;
   border-radius: 50%;
+  /* Promoted so the cross-fade never re-rasters the gradient. */
+  will-change: opacity;
+}
+
+/* Triangle weights around t = 0.5: each stop peaks where it should and the
+   two neighbours sum to 1, so total ink stays constant across the travel. */
+@utility glow-amber {
+  opacity: clamp(0, calc(1 - var(--t) * 2), 1);
   background: radial-gradient(
     circle closest-side,
-    rgb(252 202 36 / 0.22),
-    rgb(252 202 36 / 0.1) 45%,
-    rgb(252 202 36 / 0) 72%
+    rgb(252 202 36 / 0.28),
+    rgb(252 202 36 / 0.16) 46%,
+    rgb(252 202 36 / 0) 78%
   );
-  animation: glow-breathe 7s ease-in-out infinite;
+}
+
+/* Triangle weights around t = 0.5: each stop peaks where it should and the
+   two neighbours sum to 1, so total ink stays constant across the travel.
+   The middle term is `2 - 2t`, not `1 - 2t` — the latter falls to zero at
+   the very t it must peak at, emptying the bloom mid-sweep. */
+@utility glow-tangerine {
+  opacity: clamp(0, min(calc(var(--t) * 2), calc(2 - var(--t) * 2)), 1);
+  background: radial-gradient(
+    circle closest-side,
+    rgb(255 171 61 / 0.19),
+    rgb(255 171 61 / 0.11) 46%,
+    rgb(255 171 61 / 0) 78%
+  );
+}
+
+@utility glow-salmon {
+  opacity: clamp(0, calc(var(--t) * 2 - 1), 1);
+  background: radial-gradient(
+    circle closest-side,
+    rgb(255 155 122 / 0.17),
+    rgb(255 155 122 / 0.1) 46%,
+    rgb(255 155 122 / 0) 78%
+  );
+}
+
+/* Dark keeps a single amber bloom — the travel is a remedy for paper, not a
+   theme. Only the weight is set here: `.dark .glow-core` further down owns
+   the dark background (amber reads far hotter on near-black, so it drops to
+   0.14), and it must keep winning, or the dark bloom goes too hot. */
+.dark .glow-amber {
+  opacity: 1;
+}
+
+.dark .glow-tangerine,
+.dark .glow-salmon {
+  display: none;
 }
 
 /* Idle life: the bloom slowly swells and dims, like embers. */
@@ -205,7 +277,7 @@
  * The selectors below MUST match REVEALS in Motion.jsx: this rule hides the
  * elements, Motion.jsx writes the same state inline, then drops `.motion`.
  * Each reveal finishes with `clearProps`, so everything settles on its
- * exact layout position. y (1.5rem) matches HIDDEN_Y there.
+ * exact layout position. y (0.75rem) matches HIDDEN_Y there.
  *
  * One rule per element, never nested: a paragraph inside an animated
  * wrapper would fade twice and land late.
@@ -221,7 +293,7 @@
       main footer a
     ) {
     opacity: 0;
-    transform: translateY(1.5rem);
+    transform: translateY(0.75rem);
   }
 }
 
@@ -361,4 +433,126 @@
     rgb(252 202 36 / 0.06) 45%,
     rgb(252 202 36 / 0) 72%
   );
+}
+
+/* ------------------------------------------------------------------ *
+ * Theme crossfade
+ *
+ * The `.dark` swap re-points every --color-* custom property at once, so
+ * each surface repaints instantly — a cut. `.theme-transition` (armed by
+ * ThemeToggle for exactly as long as the flip takes) gives every element
+ * a short colour transition so background, text, border and accent
+ * dissolve together instead.
+ *
+ * Unlayered so it outranks the per-element `transition-*` utilities, and
+ * scoped to a class that only exists for ~360ms: nothing carries a colour
+ * transition at rest. Only colour-bearing properties are listed — a
+ * `transform` here would fight a card lift or a nav indicator mid-flight,
+ * and no transform changes during a theme flip anyway. The global
+ * reduced-motion rule collapses the duration to 0.01ms, so the crossfade
+ * becomes the instant swap those visitors asked for.
+ * ------------------------------------------------------------------ */
+.theme-transition *,
+.theme-transition *::before,
+.theme-transition *::after {
+  transition: background-color 0.3s ease, border-color 0.3s ease,
+    color 0.3s ease, fill 0.3s ease, box-shadow 0.3s ease;
+}
+
+/* ------------------------------------------------------------------ *
+ * Micro-interactions — hover lifts
+ *
+ * Same design at rest, a little life on contact. Both gates in one media
+ * query:
+ *   (hover: hover)              touch devices never latch a hover state,
+ *                                so a lift would fire on every tap;
+ *   (prefers-reduced-motion:    spec: no hover *movement* — colour-only
+ *     no-preference)            hovers remain, transforms don't.
+ *
+ * Unlayered: these rules outrank the transition utilities on the same
+ * elements, so each class ships the full property list it manages.
+ * ------------------------------------------------------------------ */
+@media (hover: hover) and (prefers-reduced-motion: no-preference) {
+  /* Social icons — monochrome, 180ms, a 2px lift with a whisper of scale.
+     Colour transitions are included because this rule replaces the
+     element's own `transition-colors` while it applies. */
+  .icon-lift {
+    transition: transform 0.18s var(--ease-editorial),
+      opacity 0.18s var(--ease-editorial),
+      background-color 0.2s var(--ease-editorial),
+      color 0.2s var(--ease-editorial);
+  }
+
+  .icon-lift:hover {
+    transform: translateY(-2px) scale(1.06);
+    opacity: 0.85;
+  }
+
+  /* Project tiles — a 3px lift and a border that firms up, on the same
+     300ms editorial curve the rest of the site uses. No rotation, no
+     scale, no shadow change: the grid should still read as a grid. */
+  .project-card {
+    transition: transform 0.3s var(--ease-editorial),
+      background-color 0.3s var(--ease-editorial),
+      border-color 0.3s var(--ease-editorial);
+  }
+
+  .project-card:hover {
+    transform: translateY(-3px);
+    /* Rule → a quarter of the way to ink: firmer, still a hairline.
+       Derived from existing tokens, so both themes follow for free. */
+    border-color: color-mix(
+      in oklab,
+      var(--color-ink) 25%,
+      var(--color-rule)
+    );
+  }
+
+  .project-card .view-live {
+    transition: transform 0.3s var(--ease-editorial);
+  }
+
+  .project-card:hover .view-live {
+    transform: translateX(3px);
+  }
+}
+
+/* ------------------------------------------------------------------ *
+ * Scroll progress
+ *
+ * A 2px rail glued to the right edge: faint rule track, amber fill that
+ * grows with scroll position. Pure scroll-linked CSS via
+ * `animation-timeline: scroll()` — no scroll listener, no rAF, no JS at
+ * all, so it costs nothing on the main thread.
+ *
+ * The fill rests at scaleY(0): browsers without scroll-driven animation
+ * support (inside the @supports gate) simply never see a bar, and the
+ * track alone reads as the page edge. Hidden below lg by the markup —
+ * the floating glass pills and tab bar already own mobile's edges.
+ * ------------------------------------------------------------------ */
+.scroll-progress {
+  background: color-mix(in oklab, var(--color-rule) 50%, transparent);
+}
+
+.scroll-progress__fill {
+  background: var(--color-amber-deep);
+  transform: scaleY(0);
+  transform-origin: top;
+  will-change: transform;
+}
+
+@supports (animation-timeline: scroll()) {
+  .scroll-progress__fill {
+    animation: scroll-progress-grow linear both;
+    animation-timeline: scroll(root block);
+  }
+}
+
+@keyframes scroll-progress-grow {
+  from {
+    transform: scaleY(0);
+  }
+  to {
+    transform: scaleY(1);
+  }
 }

@@ -16,8 +16,19 @@ import { useEffect, useRef } from "react";
  *     fast and relaxes when it stops;
  *   - idle: once settled the rAF loop exits entirely — CPU at zero
  *     until the next mousemove;
- *   - breathing: a slow CSS pulse lives on `.glow-core`, a child, so
+ *   - breathing: a slow CSS pulse lives on `.glow-bloom`, a child, so
  *     JS and CSS never animate the same property.
+ *
+ * ── Warm hue travel ─────────────────────────────────────────────────
+ * Paper is too light for amber to carry a glow, so the colour travels as
+ * the cursor sweeps the page — gold → tangerine → salmon. Each frame writes
+ * ONE custom property, `--t`, and global.css turns it into cross-fading
+ * opacities on three pre-baked gradients — a style recalc and a composite,
+ * where re-colouring the gradient every frame would repaint the layer.
+ *
+ * `--t` is derived from the eased position rather than the raw pointer, so
+ * the hue and the bloom travel together instead of the colour snapping ahead
+ * of the light it belongs to.
  */
 export default function Glow() {
   const layerRef = useRef(null);
@@ -43,9 +54,25 @@ export default function Glow() {
     let tx = 0;
     let ty = 0;
     let scale = 1;
+    let lastT = -1;
 
     const paint = () => {
       layer.style.transform = `translate3d(${x - RADIUS}px, ${y - RADIUS}px, 0) scale(${scale.toFixed(3)})`;
+
+      // Hue travel: mostly the horizontal sweep, with vertical movement
+      // weighted in so no direction leaves the colour dead. Clamped — a
+      // resize can strand the eased position outside the viewport.
+      const t = Math.min(
+        1,
+        Math.max(
+          0,
+          (x / window.innerWidth) * 0.62 + (1 - y / window.innerHeight) * 0.38
+        )
+      );
+      if (Math.abs(t - lastT) > 0.002) {
+        lastT = t;
+        layer.style.setProperty("--t", t.toFixed(3));
+      }
     };
 
     const step = () => {
@@ -112,7 +139,13 @@ export default function Glow() {
       className="pointer-events-none fixed inset-0 z-0 overflow-hidden"
     >
       <div ref={layerRef} className="glow-layer opacity-0">
-        <div className="glow-core" />
+        <div className="glow-bloom">
+          {/* Ordered back-to-front: amber is the resting state, salmon
+              lands on top as `--t` rises. */}
+          <div className="glow-core glow-amber" />
+          <div className="glow-core glow-tangerine" />
+          <div className="glow-core glow-salmon" />
+        </div>
       </div>
     </div>
   );

@@ -21,7 +21,7 @@ export default function ProjectCard({ project, onOpen }) {
         onOpen(project);
       }}
       aria-label={`Open live preview of ${project.name}`}
-      className="group relative flex min-h-[7rem] flex-col justify-between overflow-hidden border-r border-b border-rule bg-paper p-4 text-left no-underline transition-colors duration-300 hover:bg-paper-raised"
+      className="project-card group relative flex min-h-[7rem] flex-col justify-between overflow-hidden border-r border-b border-rule bg-paper p-4 text-left no-underline transition-colors duration-300 hover:bg-paper-raised"
     >
       <span
         aria-hidden="true"
@@ -58,7 +58,7 @@ export default function ProjectCard({ project, onOpen }) {
 
         <span
           data-dim
-          className="mt-3 flex items-center gap-1.5 text-[13px] text-muted transition-colors duration-300 group-hover:text-ink"
+          className="view-live mt-3 flex items-center gap-1.5 text-[13px] text-muted transition-colors duration-300 group-hover:text-ink"
         >
           View live
         </span>

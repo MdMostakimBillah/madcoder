@@ -28,7 +28,7 @@ export default function Footer() {
                   ? { target: "_blank", rel: "noreferrer" }
                   : {})}
                 aria-label={social.label}
-                className="flex h-9 w-9 items-center justify-center text-ink-soft transition-colors duration-200 hover:bg-ink hover:text-paper"
+                className="icon-lift flex h-9 w-9 items-center justify-center text-ink-soft transition-colors duration-200 hover:bg-ink hover:text-paper"
               >
                 <Icon />
               </a>

@@ -18,6 +18,17 @@ import SkillsSection from "../components/SkillsSection.jsx";
 
     <a href="#main" class="skip-link">Skip to content</a>
 
+    <!-- Scroll progress: a 2px amber rail on the right edge, driven purely
+         by a scroll-linked CSS animation (no scroll listener, no JS) — see
+         .scroll-progress in global.css. Desktop only; below lg the floating
+         glass chrome owns the edges. -->
+    <div
+      aria-hidden="true"
+      class="scroll-progress pointer-events-none fixed right-0 top-0 z-30 hidden h-dvh w-[2px] lg:block"
+    >
+      <span class="scroll-progress__fill block h-full w-full"></span>
+    </div>
+
     <!--
       Normal document scroll: the page itself scrolls (no inner viewport),
       so sections size to their content instead of filling a screen.

@@ -3,6 +3,10 @@ import { MoonIcon, SunIcon } from "./Icons.jsx";
 
 export const THEME_STORAGE_KEY = "theme";
 
+/** Shared timer — the desktop rail and the mobile pill are two instances of
+    this button, so a rapid double-toggle must disarm from one clock. */
+let themeTid = 0;
+
 /**
  * Light/dark switch.
  *
@@ -35,6 +39,17 @@ export default function ThemeToggle({ className = "" }) {
   const toggle = () => {
     const root = document.documentElement;
     const next = !root.classList.contains("dark");
+
+    // Crossfade instead of a hard cut: arm short colour transitions across
+    // the document, flip the palette, then disarm once the flip has played
+    // out. The class exists only for those ~360ms, so no element carries a
+    // theme transition at rest — hover and reveal timings elsewhere in the
+    // stylesheet are untouched (see .theme-transition in global.css).
+    root.classList.add("theme-transition");
+    window.clearTimeout(themeTid);
+    themeTid = window.setTimeout(() => {
+      root.classList.remove("theme-transition");
+    }, 360);
 
     root.classList.toggle("dark", next);
     setIsDark(next);

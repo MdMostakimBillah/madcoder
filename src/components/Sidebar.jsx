@@ -1,3 +1,4 @@
+import { useLayoutEffect, useRef, useState } from "react";
 import { CV_FILE, identity, navItems, socials } from "../data/site.js";
 import { asset } from "../lib/asset.js";
 import useActiveSection from "../hooks/useActiveSection.js";
@@ -43,6 +44,75 @@ const NAV_ICONS = {
 export default function Sidebar() {
   const active = useActiveSection(NAV_IDS);
 
+  // ── The moving indicator ───────────────────────────────────────────────
+  // Instead of each item fading its own dash in and out, ONE dash (the
+  // rail) and ONE amber pill (the tab bar) slide between items — the same
+  // line, travelling. Positions are measured against each list's own box
+  // (getBoundingClientRect deltas, so nav transforms and either
+  // breakpoint are accounted for) and applied as a transform:
+  // composited, one style write per activation, zero per scroll frame.
+  //
+  // Until the first measurement lands, both lists render exactly as they
+  // always did — the active item carries its own amber dash/pill — so SSR
+  // and no-JS visitors see the original design with no stray line parked
+  // at the top of the list. The switch happens in one commit, so there is
+  // no frame where the destination is bare before the line arrives.
+  const railRef = useRef(null);
+  const tabRef = useRef(null);
+  const [ind, setInd] = useState({
+    dy: 0,
+    mx: 0,
+    my: 0,
+    railOn: false,
+    tabOn: false,
+  });
+
+  useLayoutEffect(() => {
+    const measure = () => {
+      const read = (ul, side) => {
+        if (!ul || ul.offsetWidth === 0) return null; // hidden at this breakpoint
+        const link = ul.querySelector("a[aria-current]");
+        if (!link) return null;
+        const box = ul.getBoundingClientRect();
+        const rect = link.getBoundingClientRect();
+        return side === "rail"
+          ? { dy: rect.top - box.top + rect.height / 2 - 0.5 }
+          : { mx: rect.left - box.left, my: rect.top - box.top };
+      };
+
+      const rail = read(railRef.current, "rail");
+      const tab = read(tabRef.current, "tab");
+
+      setInd((prev) => {
+        const next = {
+          dy: rail ? rail.dy : prev.dy,
+          mx: tab ? tab.mx : prev.mx,
+          my: tab ? tab.my : prev.my,
+          railOn: prev.railOn || !!rail,
+          tabOn: prev.tabOn || !!tab,
+        };
+        const unchanged =
+          next.dy === prev.dy &&
+          next.mx === prev.mx &&
+          next.my === prev.my &&
+          next.railOn === prev.railOn &&
+          next.tabOn === prev.tabOn;
+        return unchanged ? prev : next;
+      });
+    };
+
+    measure();
+    // A breakpoint flip hides one list and reveals the other — remeasure
+    // so the visible indicator lands on its item instead of a stale one.
+    window.addEventListener("resize", measure, { passive: true });
+    const wide = window.matchMedia("(min-width: 1024px)");
+    wide.addEventListener("change", measure);
+    return () => {
+      window.removeEventListener("resize", measure);
+      wide.removeEventListener("change", measure);
+    };
+  }, [active]);
+
   return (
     // Mobile: `fixed` row of two glass pills overlaying the content — the
     // backdrop-filter on each pill makes it a containing block, which is
@@ -67,7 +137,7 @@ export default function Sidebar() {
             width="28"
             height="28"
             aria-hidden="true"
-            className="h-7 w-7 shrink-0 rounded-full object-cover ring-1 ring-ink/10"
+            className="h-7 w-7 shrink-0 rounded-full object-cover"
           />
 
           <div className="min-w-0">
@@ -105,18 +175,32 @@ export default function Sidebar() {
 
         {/* ── top: identity (desktop rail only — mobile carries it in the
              glass pill above) ── */}
-        <div data-reveal className="hidden lg:block">
-          <h1 className="text-[1.15rem] font-bold leading-none tracking-[-0.02em] text-ink lg:whitespace-nowrap lg:text-[2.75rem] lg:leading-[1.05]">
+        {/* Three separate reveals so the entrance can stagger them —
+            name → subtitle → description — ahead of the nav and the main
+            content (spec order). Layout is untouched: a reveal only ever
+            animates opacity/transform, and clearProps removes both when
+            it lands. */}
+        <div className="hidden lg:block">
+          <h1
+            data-reveal
+            className="text-[1.15rem] font-bold leading-none tracking-[-0.02em] text-ink lg:whitespace-nowrap lg:text-[2.75rem] lg:leading-[1.05]"
+          >
             <a href="#about" className="inline-block lg:block">
               {identity.name}
             </a>
           </h1>
           {/* legacy rail: profession sits tight under the name, bold and
               full-strength — not muted */}
-          <p className="mt-1 text-[12px] font-bold tracking-wide text-ink lg:mt-1.5 lg:text-[17px]">
+          <p
+            data-reveal
+            className="mt-1 text-[12px] font-bold tracking-wide text-ink lg:mt-1.5 lg:text-[17px]"
+          >
             {identity.role}
           </p>
-          <p className="mt-4 hidden text-[15px] leading-[1.5] text-ash lg:block">
+          <p
+            data-reveal
+            className="mt-4 hidden text-[15px] leading-[1.5] text-ash lg:block"
+          >
             {identity.blurb}
           </p>
         </div>
@@ -127,7 +211,20 @@ export default function Sidebar() {
           data-reveal
           className="mt-2.5 hidden delay-100 lg:absolute lg:block lg:left-0 lg:top-1/2 lg:mt-0 lg:w-full lg:-translate-y-1/2"
         >
-          <ul className="flex flex-wrap items-center gap-x-5 gap-y-1 lg:flex-col lg:items-start lg:gap-1">
+          <ul ref={railRef} className="relative flex flex-wrap items-center gap-x-5 gap-y-1 lg:flex-col lg:items-start lg:gap-1">
+            {/* The travelling dash: ONE line that slides from item to
+                item, instead of per-item dashes cross-fading. Same 28px,
+                same amber-deep, same 300ms curve — it just moves. Held
+                invisible until the first measurement lands (railOn), so
+                SSR/no-JS keeps the original per-item dash. */}
+            <span
+              aria-hidden="true"
+              style={{
+                transform: `translateY(${ind.dy}px)`,
+                visibility: ind.railOn ? "visible" : "hidden",
+              }}
+              className="pointer-events-none absolute left-0 top-0 h-px w-7 bg-amber-deep transition-transform duration-300 ease-[cubic-bezier(0.4,0,0.2,1)]"
+            />
             {navItems.map((item) => {
               const isActive = active === item.id;
               return (
@@ -141,14 +238,17 @@ export default function Sidebar() {
                   >
                     {/* marker: the hairline dash — muted 16px at rest,
                         grows to 28px + amber while active or hovered.
-                        transition-all eases width AND colour together on
-                        the same 300ms curve (CSS is its only animator —
-                        the old GSAP width tween fought it). */}
+                        Once the travelling line is live the active slot
+                        keeps its width (so the label stays put) but goes
+                        transparent — the moving line above *is* the active
+                        dash, exactly overlapping it at rest. */}
                     <span
                       aria-hidden="true"
                       className={`h-px transition-all duration-300 ease-[cubic-bezier(0.4,0,0.2,1)] ${
                         isActive
-                          ? "w-7 bg-amber-deep"
+                          ? ind.railOn
+                            ? "w-7 bg-transparent"
+                            : "w-7 bg-amber-deep"
                           : "w-4 bg-rule group-hover:w-7 group-hover:bg-ink"
                       }`}
                     />
@@ -182,7 +282,7 @@ export default function Sidebar() {
                     {...(isExternal ? { target: "_blank", rel: "noreferrer" } : {})}
                     aria-label={social.label}
                     data-iconbtn=""
-                    className="flex h-9 w-9 items-center justify-center text-ink-soft transition-colors duration-200 hover:bg-ink hover:text-paper"
+                    className="icon-lift flex h-9 w-9 items-center justify-center text-ink-soft transition-colors duration-200 hover:bg-ink hover:text-paper"
                   >
                     <Icon />
                   </a>
@@ -220,20 +320,39 @@ export default function Sidebar() {
         data-reveal
         className="fixed inset-x-0 bottom-0 z-40 flex justify-center px-4 pb-[max(1rem,env(safe-area-inset-bottom))] delay-300 lg:hidden"
       >
-        <ul className="flex items-center gap-1 rounded-full border border-white/50 bg-paper/70 p-1.5 shadow-[0_16px_40px_-16px_rgb(20_17_13/0.5)] backdrop-blur-xl backdrop-saturate-150 dark:border-white/10">
+        <ul ref={tabRef} className="relative flex items-center gap-1 rounded-full border border-white/50 bg-paper/70 p-1.5 shadow-[0_16px_40px_-16px_rgb(20_17_13/0.5)] backdrop-blur-xl backdrop-saturate-150 dark:border-white/10">
+          {/* The travelling pill: the active amber background slides
+              between tabs instead of each tab flipping its own on — same
+              44px, same colour, same 300ms curve, one element in motion.
+              Invisible until measured (tabOn), so SSR/no-JS keeps the
+              original per-tab pill. Pointer-transparent: taps reach the
+              link layered above it. */}
+          <span
+            aria-hidden="true"
+            style={{
+              transform: `translate(${ind.mx}px, ${ind.my}px)`,
+              visibility: ind.tabOn ? "visible" : "hidden",
+            }}
+            className="pointer-events-none absolute left-0 top-0 h-11 w-11 rounded-full bg-amber shadow-[0_8px_20px_-8px_rgb(252_202_36/0.75)] transition-transform duration-300 ease-out"
+          />
           {navItems.map((item) => {
             const Icon = NAV_ICONS[item.id];
             const isActive = active === item.id;
             return (
               <li key={item.id}>
+                {/* `relative` lifts the link above the travelling pill in
+                    paint order; once it is live the active tab keeps only
+                    its text colour — the pill carries the fill. */}
                 <a
                   href={`#${item.id}`}
                   aria-current={isActive ? "true" : undefined}
                   aria-label={item.label}
                   title={item.label}
-                  className={`flex h-11 w-11 items-center justify-center rounded-full transition-all duration-300 ease-out active:scale-95 ${
+                  className={`relative flex h-11 w-11 items-center justify-center rounded-full transition-all duration-300 ease-out active:scale-95 ${
                     isActive
-                      ? "bg-amber text-amber-ink shadow-[0_8px_20px_-8px_rgb(252_202_36/0.75)]"
+                      ? ind.tabOn
+                        ? "text-amber-ink"
+                        : "bg-amber text-amber-ink shadow-[0_8px_20px_-8px_rgb(252_202_36/0.75)]"
                       : "text-ink-soft hover:bg-ink/5 hover:text-ink"
                   }`}
                 >
