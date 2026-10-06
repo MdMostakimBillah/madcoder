@@ -71,6 +71,11 @@ export const experience = [
     body: "Completed a 7-day winter camp with the Bangladesh Army in my collage life **BNCC**, gaining valuable experience in discipline, teamwork, leadership, and resilience in physically and mentally challenging conditions.",
   },
   {
+    period: "2 days",
+    role: "AI Skills Training — BRAC",
+    body: "Earned a **Certificate of Completion** for BRAC's **AI Skills Training** programme, a 2-day course run as a joint initiative of the BRAC Education Programme **(BEP)**, BRAC Learning Division **(BLD)** and Social Innovation Lab **(SIL)**. The training is part of the **AI Opportunity Fund: Asia-Pacific** in collaboration with **AVPN**, with support from **Google.org** and the **ADB**.",
+  },
+  {
     period: "3 months",
     role: "Security Personnel",
     body: "I also served as a **security** personnel for 3 months, a responsibility that greatly enhanced my personal discipline, work ethics, and sense of accountability.",

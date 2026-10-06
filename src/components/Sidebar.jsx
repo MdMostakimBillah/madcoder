@@ -336,8 +336,8 @@ export default function Sidebar() {
               44px, same colour, same 300ms curve, one element in motion.
               Invisible until measured (tabOn), so SSR/no-JS keeps the
               original per-tab pill. Pointer-transparent: taps reach the
-              link layered above it. The pill always covers the top 44px
-              of a link — the icon zone — never the label below it. */}
+              link layered above it. It covers the whole link: with the
+              taskbar icon-only, a link *is* the 44px icon zone. */}
           <span
             aria-hidden="true"
             style={{
@@ -367,12 +367,11 @@ export default function Sidebar() {
                       : "text-ink-soft hover:bg-ink/5 hover:text-ink"
                   }`}
                 >
+                  {/* Icon only: the name lives in aria-label/title, so the
+                      bar stays a single 44px row of circles and the
+                      travelling pill lands dead-centre with nothing to
+                      clear below it. */}
                   <Icon className="h-5 w-5" />
-                  {/* The section name under the icon: a reserved slot on
-                      every link (so the bar's height never moves), revealed
-                      only for the active tab, and only ≤768px — above that
-                      the base rule keeps it display:none. */}
-                  <span className="tab-label">{item.label}</span>
                 </a>
               </li>
             );

@@ -639,12 +639,11 @@
  * gets no glass reflection at all instead of a frozen one.
  * ------------------------------------------------------------------ */
 
-/* Base state, before the gate: the layers (and the taskbar label) don't
-   exist above 768px. Declared ahead of the media query on purpose — same
+/* Base state, before the gate: the decorative layers don't exist above
+   768px. Declared ahead of the media query on purpose — same
    specificity, so source order decides, and the gate must win. */
 .glass-data,
-.glass-surface,
-.tab-label {
+.glass-surface {
   display: none;
 }
 
@@ -782,47 +781,11 @@
     pointer-events: none;
   }
 
-  /* ── Taskbar: the active section's name, under its icon ──────────
-     Every link takes the same tall shape with a *reserved* label
-     slot, so the bar's height never moves — only the active label's
-     opacity and 4px of offset animate. The icon zone stays exactly
-     44px tall (12px pad + 20px icon), so the travelling pill still
-     lands dead-centre on it. Above 768px the base rule keeps labels
-     at display:none and the utility h-11 keeps links at 44px:
-     tablets see the taskbar exactly as it was. */
-  .tab-link {
-    height: 3.625rem; /* 12 pad + 20 icon + 14 gap + 12 label */
-    flex-direction: column;
-    justify-content: flex-start;
-    padding-top: 0.75rem;
-    border-radius: 0.875rem;
-  }
-
-  .tab-label {
-    display: block;
-    max-width: 100%;
-    margin-top: 14px; /* clears the 44px pill's bottom curve */
-    overflow: hidden;
-    font-size: 9px;
-    line-height: 12px;
-    font-weight: 700;
-    white-space: nowrap;
-    text-overflow: ellipsis;
-    /* Explicitly the theme's ink, NOT the link's inherited amber-ink:
-       the icon sits *on* the amber pill (dark type), the label sits on
-       the glass *below* it and needs full-contrast theme type — amber
-       on light glass is ~2:1 and would fail. */
-    color: var(--color-ink);
-    opacity: 0;
-    transform: translateY(4px);
-    transition: opacity 0.3s ease, transform 0.3s ease;
-    pointer-events: none;
-  }
-
-  .tab-link[aria-current="true"] .tab-label {
-    opacity: 1;
-    transform: none;
-  }
+  /* ── Taskbar ─────────────────────────────────────────────────────
+     Icon-only, so the link keeps the bare utility shape: a 44px circle
+     (h-11 w-11 rounded-full) that the travelling pill measures and
+     covers exactly. Nothing about the taskbar changes across the gate
+     above — only the glass layers appear. */
 }
 
 @keyframes glass-data-drift {
