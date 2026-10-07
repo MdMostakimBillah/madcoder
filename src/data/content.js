@@ -98,6 +98,11 @@ export const experience = [
     role: "Office & Computing",
     body: "Moreover, I have strong **skills** in basic computing, including Microsoft Word, Excel, PowerPoint, internet browsing, data entry, and fast typing. I’m a quick learner, adaptable to new environments, and always eager to grow through challenges and learning opportunities.",
   },
+  {
+    period: "6 months",
+    role: "Computer Training",
+    body: "Completed a **6-month computer training** where I learned every **basic and official computer work** — Microsoft **Word, Excel, PowerPoint**, internet and email, **data entry**, fast typing, printing, and everyday office tasks.",
+  },
 ];
 
 /**
