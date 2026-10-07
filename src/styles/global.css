@@ -182,18 +182,20 @@
  *
  * Chroma, on the other hand, is nearly free at a fixed luminance — and
  * yellow is the one hue light enough to carry a lot of it before it hits
- * that ceiling. So each core's centre is solved rather than guessed: the
- * deepest yellow whose blend still leaves ash at ≥4.5:1 (worst case
- * 4.51:1; 4.76:1 measured behind the blurb itself, against 4.77:1 on bare
- * paper — the redesign costs nothing). That buys chroma 40 → 53 → 65
- * across the sweep, where the old gold → tangerine → salmon travel managed
- * 27 → 14 → 8 and died out entirely over the right half of the page.
+ * that ceiling. So each core's centre was *shaped* against it rather than
+ * guessed: the deepest yellow whose blend still leaves ash at ≥4.5:1
+ * (worst case 4.51:1). Then the whole ramp was taken down to ~28% of that
+ * budget — peaks of 0.125 → 0.170 → 0.218 instead of 0.445 → 0.607 → 0.78 —
+ * because a bloom that shouts across the paper while the cursor sweeps is
+ * not a tint, it is a spotlight. The shape and the hue travel are the
+ * solver's; the strength is now a whisper, so the contrast case only gets
+ * easier (nothing here can approach the 4.51:1 floor).
  *
  * The falloff is a sampled Gaussian (σ ≈ 0.65) whose tail only reaches
- * zero at the very edge: no shoulder kink, no visible 78% ring — the
- * stain the old linear ramp left behind. Inside 45% the ramp is a single
- * hue; past that it deepens to tangerine at alphas so small (≤0.03) they
- * cost nothing in contrast.
+ * zero at the very edge: no shoulder kink, no visible ring — the stain a
+ * linear ramp leaves behind. Inside 45% the ramp is a single hue; past
+ * that it deepens to tangerine at alphas so small (≤0.008) they cost
+ * nothing in contrast.
  *
  * Glow.jsx writes ONE custom property, `--t` (from the *eased* position,
  * so the colour arrives with the light), and the three cores below turn it
@@ -236,22 +238,23 @@
    The middle term is `2 - 2t`, not `1 - 2t` — the latter falls to zero at
    the very t it must peak at, emptying the bloom mid-sweep.
 
-   Backgrounds are a sampled Gaussian, each stop solved to sit exactly on
-   the contrast ceiling for its radius (see the header comment). `start` is
+   Backgrounds are a sampled Gaussian, each stop solved against the
+   contrast ceiling for its radius and then the whole ramp scaled to
+   ~28% of it (see the header comment). `start` is
    t = 0 (bottom-left of the sweep), `end` is t = 1 (top-right); only the
    centre hue differs between them — the corona is shared, so the travel
-   reads as the light intensifying rather than as a colour change. */
+   reads as the light warming rather than as a colour change. */
 @utility glow-start {
   opacity: clamp(0, calc(1 - var(--t) * 2), 1);
   background: radial-gradient(
     circle closest-side,
-    rgb(255 221 51 / 0.445) 0%,
-    rgb(255 221 51 / 0.418) 15%,
-    rgb(255 221 51 / 0.35) 30%,
-    rgb(255 221 51 / 0.261) 45%,
-    rgb(255 221 51 / 0.176) 60%,
-    rgb(255 221 51 / 0.106) 75%,
-    rgb(255 171 61 / 0.029) 88%,
+    rgb(255 221 51 / 0.125) 0%,
+    rgb(255 221 51 / 0.117) 15%,
+    rgb(255 221 51 / 0.098) 30%,
+    rgb(255 221 51 / 0.073) 45%,
+    rgb(255 221 51 / 0.049) 60%,
+    rgb(255 221 51 / 0.03) 75%,
+    rgb(255 171 61 / 0.008) 88%,
     rgb(255 171 61 / 0) 100%
   );
 }
@@ -260,13 +263,13 @@
   opacity: clamp(0, min(calc(var(--t) * 2), calc(2 - var(--t) * 2)), 1);
   background: radial-gradient(
     circle closest-side,
-    rgb(255 230 61 / 0.607) 0%,
-    rgb(255 230 61 / 0.568) 15%,
-    rgb(255 230 61 / 0.47) 30%,
-    rgb(255 230 61 / 0.347) 45%,
-    rgb(255 221 51 / 0.176) 60%,
-    rgb(255 221 51 / 0.106) 75%,
-    rgb(255 171 61 / 0.029) 88%,
+    rgb(255 230 61 / 0.17) 0%,
+    rgb(255 230 61 / 0.159) 15%,
+    rgb(255 230 61 / 0.132) 30%,
+    rgb(255 230 61 / 0.097) 45%,
+    rgb(255 221 51 / 0.049) 60%,
+    rgb(255 221 51 / 0.03) 75%,
+    rgb(255 171 61 / 0.008) 88%,
     rgb(255 171 61 / 0) 100%
   );
 }
@@ -275,13 +278,13 @@
   opacity: clamp(0, calc(var(--t) * 2 - 1), 1);
   background: radial-gradient(
     circle closest-side,
-    rgb(255 235 69 / 0.78) 0%,
-    rgb(255 235 69 / 0.726) 15%,
-    rgb(255 235 69 / 0.593) 30%,
-    rgb(255 235 69 / 0.431) 45%,
-    rgb(255 221 51 / 0.176) 60%,
-    rgb(255 221 51 / 0.106) 75%,
-    rgb(255 171 61 / 0.029) 88%,
+    rgb(255 235 69 / 0.218) 0%,
+    rgb(255 235 69 / 0.203) 15%,
+    rgb(255 235 69 / 0.166) 30%,
+    rgb(255 235 69 / 0.121) 45%,
+    rgb(255 221 51 / 0.049) 60%,
+    rgb(255 221 51 / 0.03) 75%,
+    rgb(255 171 61 / 0.008) 88%,
     rgb(255 171 61 / 0) 100%
   );
 }
