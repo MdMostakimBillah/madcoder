@@ -36,7 +36,12 @@ const REVEAL_MS = 550;
  *
  * Where the View Transitions API is available, the flip runs inside
  * `document.startViewTransition()` and a `clip-path: circle()` grows out of
- * the pressed icon — see the reveal block in global.css. Everywhere else the
+ * the icon itself — the reveal block in global.css owns the animation, and
+ * this component only writes the circle's origin custom properties before
+ * the transition starts. Everything the reveal needs is therefore in place
+ * the frame the pseudo-tree appears: no `ready` handshake, no WAAPI
+ * `pseudoElement` target, both of which are the parts that wobble on a
+ * browser's first transition of a page. Everywhere else the
  * `.theme-transition` crossfade takes over.
  */
 export default function ThemeToggle({ className = "" }) {
@@ -99,12 +104,17 @@ export default function ThemeToggle({ className = "" }) {
       return;
     }
 
-    // Origin of the circle: the exact pixel pressed, or the button's own
-    // centre when it was reached by keyboard — Enter/Space report 0,0.
+    // Origin of the circle: the icon's own centre — "the icon point" the
+    // reveal grows out of. Deliberately NOT the pressed pixel: a tap can
+    // land anywhere on the 36px button, and on touch the first gesture's
+    // coordinates can arrive offset from the element they hit, which is
+    // exactly how the circle ends up starting near-but-not-at the icon.
+    // The rect is read in the same coordinate space the snapshots are
+    // captured in, so the circle and the icon inside it cannot disagree —
+    // and keyboard activation (Enter/Space) lands on the same point.
     const rect = event.currentTarget.getBoundingClientRect();
-    const keyed = event.clientX === 0 && event.clientY === 0;
-    const x = keyed ? rect.left + rect.width / 2 : event.clientX;
-    const y = keyed ? rect.top + rect.height / 2 : event.clientY;
+    const x = rect.left + rect.width / 2;
+    const y = rect.top + rect.height / 2;
 
     // Farthest viewport corner from that origin: the radius the circle needs
     // to just cover the screen, so the reveal lands flush on every edge.
@@ -112,6 +122,15 @@ export default function ThemeToggle({ className = "" }) {
       Math.max(x, window.innerWidth - x),
       Math.max(y, window.innerHeight - y),
     );
+
+    // The reveal's whole geometry goes up as custom properties *before* the
+    // transition starts, so `::view-transition-new(root)` can be clipped to
+    // the icon from its very first frame — the stylesheet and the animation
+    // that grows out of it read the same three numbers.
+    root.style.setProperty("--reveal-x", `${x}px`);
+    root.style.setProperty("--reveal-y", `${y}px`);
+    root.style.setProperty("--reveal-r", `${radius}px`);
+    root.style.setProperty("--reveal-ms", `${REVEAL_MS}ms`);
 
     vtActive = true;
     const settle = () => {
@@ -121,55 +140,31 @@ export default function ThemeToggle({ className = "" }) {
     try {
       const transition = document.startViewTransition(apply);
 
-      transition.ready
-        .then(() => {
-          let reveal;
-          try {
-            reveal = document.documentElement.animate(
-              [
-                { clipPath: `circle(0px at ${x}px ${y}px)` },
-                { clipPath: `circle(${radius}px at ${x}px ${y}px)` },
-              ],
-              {
-                duration: REVEAL_MS,
-                easing: "cubic-bezier(0.22, 0.61, 0.36, 1)",
-                // Without a fill the clip reverts to the stylesheet's
-                // collapsed start the moment the circle completes, which
-                // would close the view again for the frame before teardown.
-                fill: "forwards",
-                pseudoElement: "::view-transition-new(root)",
-              },
-            );
-          } catch {
-            // The animation couldn't be attached (an engine that takes
-            // `startViewTransition` but not `pseudoElement`). The stylesheet
-            // would otherwise hold the incoming view collapsed for the whole
-            // `waitUntil`, so end the transition now: an instant switch, not
-            // a frozen one.
-            transition.skipTransition?.();
-            return;
+      // Hold the pseudo-tree open until the circle has actually landed: the
+      // animation begins when the pseudo-tree is built — i.e. when `ready`
+      // settles — so the hold is anchored there, with a hard ceiling from
+      // the press in case `ready` never settles at all. Registered
+      // synchronously, so a late `ready` can only ever *shorten* the hold,
+      // never leave the snapshots free to tear down under a running circle.
+      const hold = new Promise((resolve) => {
+        let settled = false;
+        const done = () => {
+          if (!settled) {
+            settled = true;
+            resolve();
           }
-
-          // Destroying the pseudo-tree cancels the animation, and a canceled
-          // animation rejects — swallow it so an interrupted reveal never
-          // surfaces as an unhandled rejection.
-          reveal.finished?.catch(() => {});
-
-          // Hold the pseudo-tree open for the whole reveal: `waitUntil`
-          // delays the teardown (and therefore `finished`) until the circle
-          // has landed, so the snapshots can't be destroyed underneath a
-          // still-running animation on `::view-transition-new`.
-          if (typeof transition.waitUntil === "function") {
-            transition.waitUntil(
-              new Promise((resolve) => window.setTimeout(resolve, REVEAL_MS)),
-            );
-          }
-        })
-        .catch(() => {
-          /* the transition was skipped or its callback failed — the palette
-             has still flipped (apply ran, or the fallback below will), there
-             is simply no circle to draw over it */
-        });
+        };
+        window.setTimeout(done, REVEAL_MS + 600);
+        transition.ready.then(() => window.setTimeout(done, REVEAL_MS)).catch(done);
+      });
+      if (typeof transition.waitUntil === "function") {
+        try {
+          transition.waitUntil(hold);
+        } catch {
+          /* the engine declines to hold — its own lifetime for the
+             transition runs the CSS animation out instead */
+        }
+      }
 
       // `finished` settles whether the reveal played out or was skipped, so
       // the latch can never stay stuck and block the next toggle. The timer

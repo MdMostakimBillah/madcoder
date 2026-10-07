@@ -551,12 +551,12 @@
 }
 
 /* ------------------------------------------------------------------ *
- * Theme reveal — circle growing out of the toggle
+ * Theme reveal — circle growing out of the icon
  *
  * When ThemeToggle finds `document.startViewTransition`, the `.dark` swap
- * runs inside it and a `clip-path: circle()` is animated across
- * `::view-transition-new(root)`, so the incoming palette expands from the
- * icon that was pressed. The UA stylesheet cross-dissolves the two root
+ * runs inside it and a `clip-path: circle()` wipes across
+ * `::view-transition-new(root)`, so the incoming palette expands out of
+ * the icon that was pressed. The UA stylesheet cross-dissolves the two root
  * snapshots by default, which would smear that edge — so both snapshots are
  * pinned instead: the outgoing palette holds perfectly still underneath
  * while the circle uncovers the incoming one over it.
@@ -568,10 +568,21 @@
  * blending into it, and `display: block` gives the snapshot a real box for
  * the clip to bite on.
  *
- * The reveal itself is a Web Animation (started from JS with a
- * `pseudoElement` target), not a CSS `animation`, which is why the global
- * reduced-motion rule can't reach it — ThemeToggle gates on
- * `prefers-reduced-motion` and takes the crossfade path instead.
+ * The reveal is a plain CSS animation on the pseudo, not a WAAPI one: the
+ * origin (--reveal-x/y), the radius (--reveal-r) and the duration
+ * (--reveal-ms) are written by ThemeToggle *before* startViewTransition is
+ * called, so every frame the pseudo-tree exists — including any frame
+ * before script could attach an animation — is already clipped to the
+ * icon. Nothing waits on `transition.ready`, and nothing needs
+ * `pseudoElement` support in Element.animate(): those are precisely the
+ * parts that lag or fail on a browser's first transition of a page, which
+ * is how the circle used to arrive somewhere other than the icon on the
+ * first press.
+ *
+ * The global reduced-motion rule can't reach this animation (`*` does not
+ * match pseudo-elements), which is fine: ThemeToggle gates on
+ * prefers-reduced-motion and takes the crossfade path instead, so the
+ * pseudo-tree never appears for those visitors.
  * ------------------------------------------------------------------ */
 ::view-transition-image-pair(root) {
   isolation: auto;
@@ -584,21 +595,34 @@
   display: block;
 }
 
-/* The incoming view starts collapsed, everywhere. Between the pseudo-tree
- * appearing and ThemeToggle's WAAPI animation taking over there is a frame
+/* The incoming view starts collapsed *at the icon*, everywhere. Between the
+ * pseudo-tree appearing and the animation's first frame there is a frame
  * — sometimes two — and unclipped, that frame is a full-screen flash of the
  * *finished* theme before the circle snaps back to zero and grows. Radius 0
- * makes the origin irrelevant (it is corrected the instant the animation
- * starts, from the same zero), so that frame shows the outgoing palette
- * instead: seamless either way.
+ * makes even that frame seamless: it shows the outgoing palette instead,
+ * already anchored to the origin the circle is about to grow out of.
  *
  * Also the safety net for a browser that starts the transition but never
  * runs the animation — the reveal simply doesn't reveal, rather than
- * showing the result early. `fill: forwards` in ThemeToggle is what keeps
- * this rule from snapping the view shut again once the circle is complete.
+ * showing the result early. `forwards` is what keeps this rule from
+ * snapping the view shut again once the circle is complete.
  * ------------------------------------------------------------------ */
 ::view-transition-new(root) {
-  clip-path: circle(0px at 0 0);
+  clip-path: circle(0px at var(--reveal-x, 0px) var(--reveal-y, 0px));
+  animation: theme-reveal var(--reveal-ms, 550ms)
+    cubic-bezier(0.22, 0.61, 0.36, 1) forwards;
+}
+
+@keyframes theme-reveal {
+  from {
+    clip-path: circle(0px at var(--reveal-x, 0px) var(--reveal-y, 0px));
+  }
+
+  to {
+    clip-path: circle(
+      var(--reveal-r, 100vmax) at var(--reveal-x, 0px) var(--reveal-y, 0px)
+    );
+  }
 }
 
 /* ------------------------------------------------------------------ *
