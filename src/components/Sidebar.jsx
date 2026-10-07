@@ -276,7 +276,11 @@ export default function Sidebar() {
         </nav>
 
         {/* ── bottom: social links + CV download ── */}
-        <div data-reveal className="mt-auto hidden items-center gap-3 lg:flex">
+        {/* lg:self-start: the column inherits `align-items: center` from
+            the mobile top row, which floats this short row to the middle
+            of the rail — the name, blurb and nav all sit on the left
+            edge, so the icons must too. */}
+        <div data-reveal className="mt-auto hidden items-center gap-3 lg:flex lg:self-start">
           <ul className="flex items-center gap-1">
             {socials.map((social) => {
               const Icon = socialIcons[social.icon];
