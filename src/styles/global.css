@@ -47,10 +47,17 @@
 @layer base {
   html {
     scroll-behavior: smooth;
-    /* Sections are each at least a viewport tall and snap-aligned, so one
-       section owns the screen at a time — the neighbour's header can never
-       peek in. Mandatory lands every gesture on a section start. */
-    scroll-snap-type: y mandatory;
+    /* No scroll snapping. Sections are each at least a viewport tall, and
+       `scroll-snap-type: y mandatory` used to sit here so exactly one of
+       them owned the screen — but a snap resists the gesture leaving it.
+       Measured on a 1000px wheel sweep: the page climbed to 171px, was
+       pulled back to 0 (23 backward frames, 0% of the input kept), and
+       then lurched a whole section when it finally let go. That is the
+       "instant jump, no smoothness" feeling. Scrolling is native and
+       continuous now — every pixel of input, in order, one frame at a
+       time — while arriving *at* a section is still animated, because
+       that is hash navigation and the `scroll-behavior` above is what
+       animates it. */
     -webkit-text-size-adjust: 100%;
     color-scheme: light;
     /* No painted scrollbar: wheel, touch, trackpad, keys and drag all

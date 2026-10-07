@@ -10,7 +10,7 @@ import { identity, socials } from "../data/site.js";
  */
 export default function Footer() {
   return (
-    <footer className="mt-16 flex scroll-mt-24 flex-wrap items-center justify-between gap-4 border-t border-rule pb-36 pt-6 snap-start lg:mt-24 lg:pb-24">
+    <footer className="mt-16 flex scroll-mt-24 flex-wrap items-center justify-between gap-4 border-t border-rule pb-36 pt-6 lg:mt-24 lg:pb-24">
       <p className="text-[13px] text-muted">
         © <span data-year>{new Date().getFullYear()}</span>{" "}
         {identity.fullName}
