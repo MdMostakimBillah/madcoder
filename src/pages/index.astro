@@ -23,7 +23,9 @@ import SkillsSection from "../components/SkillsSection.jsx";
          2px progress rail and, before it, the native scrollbar used to
          fill. The page paints no scrollbar at all now — global.css drops
          the track, thumb and gutter — and which dot is lit comes from the
-         same observer as the rail nav and the tab bar. -->
+         same observer as the rail nav and the tab bar. Desktop only: the
+         column hides below `lg`, where the tab bar carries navigation and
+         the gutter it lived in doesn't exist. -->
     <ScrollDots client:load />
 
     <!--

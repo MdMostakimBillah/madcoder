@@ -24,6 +24,14 @@ const NAV_IDS = navItems.map((item) => item.id);
  * not as the row reflowing. `pointer-events-none` sits on the column and
  * `auto` on the links: the 20px strip at the page edge stays clickable
  * through, everything else stays transparent to taps.
+ *
+ * Desktop chrome only (`hidden lg:block`): the dots sit in the gutter
+ * the native scrollbar used to reserve, and below 1024px that gutter
+ * doesn't exist — the tab bar and pills own navigation there, so a
+ * 20px column of links down the right edge would only crowd the copy.
+ * Hiding is pure CSS: the observer keeps running (it feeds the tab bar
+ * too, from its own instance) and the anchors stay in the markup for
+ * no-JS and pre-hydration use at any width.
  */
 export default function ScrollDots() {
   const active = useActiveSection(NAV_IDS);
@@ -31,9 +39,13 @@ export default function ScrollDots() {
   return (
     <nav
       aria-label="Section dots"
-      className="pointer-events-none fixed right-0 top-1/2 z-30 -translate-y-1/2"
+      className="pointer-events-none fixed right-0 top-1/2 z-30 hidden -translate-y-1/2 lg:block"
     >
-      <ul className="flex flex-col items-center gap-2.5 pr-0.5">
+      {/* gap-0 + a 4px span: dots on a 20px pitch — small and tight —
+          while the anchor keeps its fixed 20px hit box, so the boxes
+          touch edge to edge and lighting a dot still cannot nudge a
+          neighbour. */}
+      <ul className="flex flex-col items-center gap-0 pr-0.5">
         {navItems.map((item) => {
           const on = active === item.id;
           return (
@@ -47,7 +59,7 @@ export default function ScrollDots() {
               >
                 <span
                   aria-hidden="true"
-                  className={`block h-1.5 w-1.5 rounded-full transition-transform duration-300 ease-out motion-reduce:transition-none ${
+                  className={`block h-1 w-1 rounded-full transition-transform duration-300 ease-out motion-reduce:transition-none ${
                     on
                       ? "scale-[1.6] bg-amber-deep"
                       : "bg-ink/25 group-hover:scale-125 group-hover:bg-ink/60"
