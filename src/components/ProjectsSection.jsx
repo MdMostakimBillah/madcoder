@@ -27,8 +27,12 @@ export default function ProjectsSection() {
         way an incomplete final row shows paper, not the rule
         colour — the old `gap-px` + container-background trick
         left a dead grey block in the empty cells.
+        Flex rather than grid: at rest `flex: 1 1 0` reproduces
+        equal thirds exactly, and unlike fixed grid tracks it lets
+        the hover accordion hand width from card to card through
+        flex-grow alone (global.css, .project-grid).
       */}
-      <div className="mt-8 grid grid-cols-1 border-t border-l border-rule sm:grid-cols-3">
+      <div className="project-grid mt-8 flex flex-col border-t border-l border-rule sm:flex-row">
         {projects.map((project) => (
           <ProjectCard
             key={project.id}

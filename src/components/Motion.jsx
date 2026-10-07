@@ -182,12 +182,37 @@ export default function Motion() {
             ...laidOut(gsap, RAIL),
             ...REVEALS.flatMap(({ sel }) => laidOut(gsap, sel)),
           ];
-          gsap.set(targets, { opacity: 0, y: HIDDEN_Y });
+          // `transition: none` ships with the hidden state on purpose: a
+          // class-set `transition-delay` (the rail nav's `delay-100`, the
+          // tab bar's `delay-300`) sits on the default `transition-property:
+          // all`, so it re-delays *every* per-frame write GSAP makes — the
+          // delay restarts before it can ever apply, computed values freeze
+          // at the hidden state for the whole tween, and the element pops in
+          // the moment GSAP stops. Each tween's `clearProps` hands the
+          // property back at the landing, class-driven delays and all.
+          gsap.set(targets, { opacity: 0, y: HIDDEN_Y, transition: "none" });
+          // An element may centre itself with the CSS `translate` property
+          // (the desktop rail nav's -50%). GSAP zeroes individual transform
+          // properties when it takes over — the -50% would vanish for the
+          // whole entrance, leaving the nav half its height low, and snap
+          // back the instant clearProps ran. Adopt the centre into the
+          // tween instead: as yPercent it rides along with y and clearProps
+          // hands it back to the stylesheet at exactly the same place.
+          targets.forEach((el) => {
+            const parts = getComputedStyle(el).translate.split(/\s+/);
+            if (parts.length < 2) return;
+            const val = parseFloat(parts[1]);
+            if (!val) return;
+            gsap.set(el, {
+              yPercent:
+                parts[1].endsWith("%") ? val : (val / el.offsetHeight) * 100,
+            });
+          });
           // Bars carry a *different* hidden state, and it has to land before
           // the class drops for the same reason: dropping `html.motion` with
           // only the reveal styles in hand would flash all 15 bars full.
           const fills = laidOut(gsap, BAR);
-          gsap.set(fills, { scaleX: 0 });
+          gsap.set(fills, { scaleX: 0, transition: "none" });
 
           // (4a) one trigger per element — each lands exactly in place.
           // On boot, anything already in the viewport *waits* its turn:
@@ -208,7 +233,7 @@ export default function Motion() {
                   (delay ?? 0) +
                   (perRow ? (i % perRow) * rowStagger : 0) +
                   (inLoad ? LOAD_DELAY + Math.min(i, 6) * 0.035 : 0),
-                clearProps: "opacity,transform",
+                clearProps: "opacity,transform,transition",
                 scrollTrigger: { trigger: el, start: "top 92%", once: true },
               });
             });
@@ -239,7 +264,7 @@ export default function Motion() {
             stagger: 0.06,
             delay: 0.05,
             ease: "power3.out",
-            clearProps: "opacity,transform",
+            clearProps: "opacity,transform,transition",
           });
 
           // (4d) skill bars — the fill grows to its level as the row
@@ -269,7 +294,7 @@ export default function Motion() {
               duration: 1,
               ease: "power2.out",
               delay: (n % cols) * 0.07 + (inLoad ? LOAD_DELAY : 0),
-              clearProps: "transform",
+              clearProps: "transform,transition",
               scrollTrigger: { trigger: el, start: "top 92%", once: true },
             });
           });

@@ -668,11 +668,18 @@
 
   /* Project tiles — a 3px lift and a border that firms up, on the same
      300ms editorial curve the rest of the site uses. No rotation, no
-     scale, no shadow change: the grid should still read as a grid. */
+     scale, no shadow change: the grid should still read as a grid.
+     flex-grow rides along for the accordion below: this rule replaces
+     the element's own transition utilities, so it ships the full
+     property list it manages. The gate matters — reduced-motion
+     visitors lose the easing but keep the width change (instantly),
+     because that width carries the description: content, not
+     decoration. */
   .project-card {
     transition: transform 0.3s var(--ease-editorial),
       background-color 0.3s var(--ease-editorial),
-      border-color 0.3s var(--ease-editorial);
+      border-color 0.3s var(--ease-editorial),
+      flex-grow 0.4s var(--ease-editorial);
   }
 
   .project-card:hover {
@@ -692,6 +699,140 @@
 
   .project-card:hover .view-live {
     transform: translateX(3px);
+  }
+}
+
+/* ------------------------------------------------------------------ *
+ * Project cards — the accordion sheet
+ *
+ * The cards stay the compact tiles they always were; features,
+ * technology and use case ship in every card's markup but not in its
+ * resting face. Two shapes, chosen by capability:
+ *
+ *   no hover (touch), or    the sheet sits in the flow under the face
+ *   narrow (<768px)         with a hairline over it — nothing is
+ *                           hidden behind an input you don't have;
+ *   hover + room (≥768px)   pointing at a card hands it ~62% of the
+ *                           row (neighbours drop to ~19% each) and
+ *                           rides the sheet up inside the room that
+ *                           opens. Point elsewhere and the expansion
+ *                           follows the pointer — :has() keeps the
+ *                           bookkeeping, no script.
+ *
+ * The width change is a layout animation: the one deliberate
+ * exception to the transform/opacity rule. There is no compositor-only
+ * way to hand one card real width from its neighbours — scaleX would
+ * stretch the type, and every alternative reflows all the same. It
+ * runs on hover, over three elements, on a page otherwise done with
+ * layout, and flex-grow is the cheapest form it has. Reduced-motion
+ * visitors still get the expansion: the blanket rule strips the easing
+ * (and the sheet's slide), because the width carries the description —
+ * content, not decoration.
+ *
+ * Timing: the sheet's enter waits 0.12s so the card is nearly at its
+ * new width before text lands — mid-flight the ribbon would otherwise
+ * wrap and unwrap while visible — and the groups trail in behind it.
+ * The exit is unstaggered: everything drops together. Ground is 88%
+ * opaque so the amber sweep blooms under the sheet instead of
+ * vanishing behind a plate.
+ * ------------------------------------------------------------------ */
+.project-details {
+  display: grid;
+  gap: 0.5rem;
+  margin-top: 1rem;
+  padding-top: 0.75rem;
+  border-top: 1px solid var(--color-rule);
+}
+
+/* Base sheet: a definition list — label over value, hairline above. */
+.project-details__group {
+  display: grid;
+  gap: 0.25rem 0.75rem;
+}
+
+@media (hover: hover) and (min-width: 768px) {
+  /* ── The accordion ───────────────────────────────────────────────
+     Equal thirds at rest (`flex: 1 1 0`, sm:flex-1 on the card).
+     When any card takes focus (hover or keyboard), the row gives up
+     its shares; the focused card takes its own back. Specificity:
+     shrink outranks the base flex, focused outranks shrink. */
+  .project-grid:has(.project-card:is(:hover, :focus-visible))
+    .project-card {
+    flex-grow: 0.6;
+  }
+
+  .project-grid:has(.project-card:is(:hover, :focus-visible))
+    .project-card:is(:hover, :focus-visible) {
+    flex-grow: 2;
+  }
+
+  /* ── The sheet ──────────────────────────────────────────────────
+     Parked a card-height below (clipped by the tile's overflow),
+     riding up once the room has opened. The face steps aside under
+     it: at 88% ground the name would bleed through the sheet and
+     collide with the labels — and the sheet covers the face's half
+     of the card anyway, so the fade only trades a ghost for the
+     amber bloom. The id row stays: it lives above the sheet and
+     keeps the card numbered while expanded. */
+  .project-face {
+    transition: opacity 0.3s var(--ease-editorial);
+  }
+
+  .project-card:is(:hover, :focus-visible) .project-face {
+    opacity: 0;
+  }
+
+  .project-details {
+    position: absolute;
+    z-index: 20; /* above the face (z-10): the sheet covers it, not vice versa */
+    top: 2.5rem;
+    right: 0;
+    bottom: 0;
+    left: 0;
+    margin: 0;
+    padding: 0.75rem;
+    background: color-mix(in oklab, var(--color-paper-raised) 88%, transparent);
+    opacity: 0;
+    transform: translateY(100%);
+    transition: transform 0.3s var(--ease-editorial),
+      opacity 0.3s var(--ease-editorial);
+  }
+
+  /* Expanded, label and value share a line in a fixed label column —
+     one row per group, which is what lets the sheet fit the compact
+     card height. */
+  .project-details__group {
+    grid-template-columns: 5.5rem 1fr;
+    align-items: center;
+    opacity: 0;
+    transform: translateY(6px);
+    transition: transform 0.3s var(--ease-editorial),
+      opacity 0.3s var(--ease-editorial);
+  }
+
+  .project-card:is(:hover, :focus-visible) .project-details {
+    opacity: 1;
+    transform: translateY(0);
+    /* Enter waits for the width; the exit (base transition) does not. */
+    transition-delay: 0.12s;
+  }
+
+  /* The reveal rides the hovered selector only: entering, the groups
+     trail the sheet; leaving, they drop together with it. */
+  .project-card:is(:hover, :focus-visible) .project-details__group {
+    opacity: 1;
+    transform: translateY(0);
+    transition-delay: 0.12s;
+  }
+
+  .project-card:is(:hover, :focus-visible)
+    .project-details__group:nth-child(2) {
+    transition-delay: 0.18s;
+  }
+
+  .project-card:is(:hover, :focus-visible)
+    .project-details__group:nth-child(3) {
+    transition-delay: 0.24s;
   }
 }
 

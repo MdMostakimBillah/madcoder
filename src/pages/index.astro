@@ -15,6 +15,12 @@ import SkillsSection from "../components/SkillsSection.jsx";
 
 <Base>
   <div class="relative">
+    <!-- Motion first: it owns no DOM, and the earlier its effect runs the
+         sooner `html.motion` drops and the entrance begins — queued last
+         behind six other islands, the rail sat hidden for well over a
+         second on a cold load. -->
+    <Motion client:load />
+
     <Glow client:load />
 
     <a href="#main" class="skip-link">Skip to content</a>
@@ -56,9 +62,5 @@ import SkillsSection from "../components/SkillsSection.jsx";
     </div>
 
     <ProfileCard client:load />
-
-    <!-- Loads gsap after hydration, then reveals every block and binds the
-         hovers. Returns null — it owns no DOM of its own. -->
-    <Motion client:load />
   </div>
 </Base>

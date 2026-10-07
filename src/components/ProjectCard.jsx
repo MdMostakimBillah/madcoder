@@ -6,6 +6,14 @@ import { ArrowUpRight } from "./Icons.jsx";
  * The amber sweep uses `transform: scale()` — composited, never a
  * width/height animation, so it costs nothing to run.
  *
+ * The face carries the number, the name and the way out — and looks the
+ * way it always did. Features, technology and use case ship in a sheet
+ * below it: hovering expands the card sideways (the flex-grow accordion
+ * — its neighbours give up their width) and the sheet rides up inside
+ * the room that opens. Where there is no hover — touch, or a viewport
+ * too narrow to expand — the sheet simply sits in the flow under a
+ * hairline. Content is never hidden behind an input you don't have.
+ *
  * An anchor, not a button: with JavaScript off it simply takes you to
  * the live project. With JS on, the click is intercepted and the
  * on-demand preview opens instead.
@@ -21,7 +29,7 @@ export default function ProjectCard({ project, onOpen }) {
         onOpen(project);
       }}
       aria-label={`Open live preview of ${project.name}`}
-      className="project-card group relative flex min-h-[7rem] flex-col justify-between overflow-hidden border-r border-b border-rule bg-paper p-4 text-left no-underline transition-colors duration-300 hover:bg-paper-raised"
+      className="project-card group relative flex min-h-[10rem] flex-col justify-between overflow-hidden border-r border-b border-rule bg-paper p-4 text-left no-underline transition-colors duration-300 hover:bg-paper-raised sm:flex-1"
     >
       <span
         aria-hidden="true"
@@ -38,7 +46,7 @@ export default function ProjectCard({ project, onOpen }) {
         <ArrowUpRight className="h-4 w-4 -translate-x-1 -translate-y-1 text-muted opacity-0 transition-all duration-300 group-hover:translate-x-0 group-hover:translate-y-0 group-hover:text-ink group-hover:opacity-100" />
       </span>
 
-      <span className="relative z-10 mt-5 block">
+      <span className="project-face relative z-10 mt-5 block">
         <span className="block text-[1.15rem] font-bold leading-[1.15] tracking-[-0.02em] text-ink">
           {project.name}
         </span>
@@ -61,6 +69,40 @@ export default function ProjectCard({ project, onOpen }) {
           className="view-live mt-3 flex items-center gap-1.5 text-[13px] text-muted transition-colors duration-300 group-hover:text-ink"
         >
           View live
+        </span>
+      </span>
+
+      {/* Features / technology / use case — the accordion sheet. Label
+          and value are plain children: the base styles stack them like
+          a definition list, the expanded card lays them out as
+          label | value rows (global.css). */}
+      <span className="project-details">
+        <span className="project-details__group">
+          <span className="type-eyebrow text-muted">Features</span>
+          <span className="text-[13px] leading-[1.5] text-ink-soft">
+            {project.features.join(" · ")}
+          </span>
+        </span>
+
+        <span className="project-details__group">
+          <span className="type-eyebrow text-muted">Technology</span>
+          <span className="flex flex-wrap gap-1.5">
+            {project.tech.map((chip) => (
+              <span
+                key={chip}
+                className="border border-rule bg-paper/70 px-1.5 py-0.5 text-[11px] tracking-wide text-ash"
+              >
+                {chip}
+              </span>
+            ))}
+          </span>
+        </span>
+
+        <span className="project-details__group">
+          <span className="type-eyebrow text-muted">Use case</span>
+          <span className="text-[13px] leading-[1.5] text-ink-soft">
+            {project.useCase}
+          </span>
         </span>
       </span>
     </a>
