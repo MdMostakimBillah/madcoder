@@ -16,17 +16,17 @@ export const projectsIntro =
  * Education entries: `year` anchors the left column (like `period` in
  * the experience list), `facts` are the label/value lines. Transcribed
  * from the original site's education card — institution names kept
- * verbatim.
+ * verbatim. The list renders in array order with no numbering of its
+ * own, so it reads newest-first: present study on top, SSC last.
  */
 export const education = [
   {
-    year: "2019",
-    title: "Secondary School Certificate",
+    year: "Present",
+    title: "B.Sc (Honours.) in CSE",
     facts: [
-      ["Institution", "Chandipur Model High School"],
-      ["Section", "Science (Higher Mathematics)"],
-      ["Pass Year", "2019"],
-      ["GPA", "4.56"],
+      ["Institution", "Delta Computer Science Collage"],
+      ["Subject", "Computer Science & Engineering"],
+      ["Pass Year", "Present (5th Semester)"],
     ],
   },
   {
@@ -40,12 +40,13 @@ export const education = [
     ],
   },
   {
-    year: "Present",
-    title: "B.Sc (Honours.) in CSE",
+    year: "2019",
+    title: "Secondary School Certificate",
     facts: [
-      ["Institution", "Delta Computer Science Collage"],
-      ["Subject", "Computer Science & Engineering"],
-      ["Pass Year", "Present (5th Semester)"],
+      ["Institution", "Chandipur Model High School"],
+      ["Section", "Science (Higher Mathematics)"],
+      ["Pass Year", "2019"],
+      ["GPA", "4.56"],
     ],
   },
 ];
