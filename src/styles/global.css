@@ -732,25 +732,55 @@
  * Timing: the sheet's enter waits 0.12s so the card is nearly at its
  * new width before text lands — mid-flight the ribbon would otherwise
  * wrap and unwrap while visible — and the groups trail in behind it.
- * The exit is unstaggered: everything drops together. Ground is 88%
- * opaque so the amber sweep blooms under the sheet instead of
- * vanishing behind a plate.
+ * The exit is unstaggered: everything drops together.
+ *
+ * Ground — two shapes again. In the flow (touch, or any viewport under
+ * 768): a tinted panel with a hairline over it and a small amber tick
+ * on every label, holding the optional `lede` the expanded card has no
+ * height for. Expanded: a thin paper veil over a real backdrop blur —
+ * the face has already faded, so the frost only ever smears amber and
+ * paper, and the sweep blooms through the rows instead of printing
+ * behind them.
  * ------------------------------------------------------------------ */
 .project-details {
   display: grid;
-  gap: 0.5rem;
+  gap: 0.625rem;
   margin-top: 1rem;
-  padding-top: 0.75rem;
+  padding: 0.75rem;
   border-top: 1px solid var(--color-rule);
+  background: color-mix(in oklab, var(--color-paper-raised) 72%, transparent);
 }
 
-/* Base sheet: a definition list — label over value, hairline above. */
+/* Base sheet (stacked): a definition list — label over value, each
+   group marked with a 2px amber tick against the panel. The block
+   font (13/1.5) sets the line strut: labels and values then share
+   one rhythm instead of the 16px page strut inflating every wrapped
+   line by five pixels. */
 .project-details__group {
   display: grid;
   gap: 0.25rem 0.75rem;
+  font-size: 0.8125rem;
+  line-height: 1.5;
+  padding-left: 0.625rem;
+  border-left: 2px solid color-mix(in oklab, var(--color-amber) 75%, transparent);
 }
 
 @media (hover: hover) and (min-width: 768px) {
+  /* This mode owns the row as well: stacked everywhere without hover
+     (a stacked sheet is tall, and three tall columns side by side is
+     not a layout), a flex row exactly where the accordion can run.
+     `flex: 1 1 0` reproduces the old equal thirds; min-height is the
+     expanded sheet's budget — three wrap lines of feature copy plus
+     the chip row and a use case, with breathing room under the last. */
+  .project-grid {
+    flex-direction: row;
+  }
+
+  .project-grid > .project-card {
+    flex: 1 1 0;
+    min-height: 11.5rem;
+  }
+
   /* ── The accordion ───────────────────────────────────────────────
      Equal thirds at rest (`flex: 1 1 0`, sm:flex-1 on the card).
      When any card takes focus (hover or keyboard), the row gives up
@@ -769,10 +799,9 @@
   /* ── The sheet ──────────────────────────────────────────────────
      Parked a card-height below (clipped by the tile's overflow),
      riding up once the room has opened. The face steps aside under
-     it: at 88% ground the name would bleed through the sheet and
-     collide with the labels — and the sheet covers the face's half
-     of the card anyway, so the fade only trades a ghost for the
-     amber bloom. The id row stays: it lives above the sheet and
+     it: the name would otherwise bleed through the frost and collide
+     with the labels — and the sheet covers the face's half of the
+     card anyway. The id row stays: it lives above the sheet and
      keeps the card numbered while expanded. */
   .project-face {
     transition: opacity 0.3s var(--ease-editorial);
@@ -791,23 +820,43 @@
     left: 0;
     margin: 0;
     padding: 0.75rem;
-    background: color-mix(in oklab, var(--color-paper-raised) 88%, transparent);
+    gap: 0.5rem; /* the stacked panel breathes at 0.625; this row has a height cap */
+    background: color-mix(in oklab, var(--color-paper-raised) 64%, transparent);
+    -webkit-backdrop-filter: blur(12px);
+    backdrop-filter: blur(12px);
     opacity: 0;
     transform: translateY(100%);
     transition: transform 0.3s var(--ease-editorial),
       opacity 0.3s var(--ease-editorial);
   }
 
-  /* Expanded, label and value share a line in a fixed label column —
-     one row per group, which is what lets the sheet fit the compact
-     card height. */
+  /* Inline labels: the eyebrow shares the first line and the value
+     wraps under it, full sheet width — long feature copy lands in
+     three lines instead of the four a fixed label column forces, and
+     the row heights stay what the compact card can hold. */
   .project-details__group {
-    grid-template-columns: 5.5rem 1fr;
-    align-items: center;
+    display: block;
+    padding-left: 0;
+    border-left: 0;
     opacity: 0;
     transform: translateY(6px);
     transition: transform 0.3s var(--ease-editorial),
       opacity 0.3s var(--ease-editorial);
+  }
+
+  .project-details__group .type-eyebrow {
+    margin-right: 0.5em;
+  }
+
+  /* The stacked sheet's overview has no room under a row-height cap —
+     it belongs to the in-flow panel, dropped here and nowhere else. */
+  .project-details__lede {
+    display: none;
+  }
+
+  /* Flows after its inline label on one chip line. */
+  .project-details__chips {
+    display: inline-flex;
   }
 
   .project-card:is(:hover, :focus-visible) .project-details {
@@ -818,7 +867,8 @@
   }
 
   /* The reveal rides the hovered selector only: entering, the groups
-     trail the sheet; leaving, they drop together with it. */
+     trail the sheet; leaving, they drop together with it. The fourth
+     step is for sheets that open with an overview (SMS). */
   .project-card:is(:hover, :focus-visible) .project-details__group {
     opacity: 1;
     transform: translateY(0);
@@ -833,6 +883,11 @@
   .project-card:is(:hover, :focus-visible)
     .project-details__group:nth-child(3) {
     transition-delay: 0.24s;
+  }
+
+  .project-card:is(:hover, :focus-visible)
+    .project-details__group:nth-child(4) {
+    transition-delay: 0.3s;
   }
 }
 

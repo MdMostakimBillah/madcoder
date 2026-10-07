@@ -7,13 +7,18 @@
  * `tags` is optional: add a few short strings (e.g. ["React", "Vite"])
  * and they will render on the card.
  *
- * `features`, `tech` and `useCase` are the hover sheet: pointing at a
- * card expands it sideways (the accordion in ProjectsSection) and the
- * sheet rides up inside the room that opens. They are sized to one
- * wrap line per group at the narrowest expanded width (768px, where
- * the card owns ~62% of the row): features join into a " · " ribbon,
- * tech renders as chips, use case is a sentence. Grounded in what each
- * live demo actually ships.
+ * `features`, `tech` and `useCase` are the accordion sheet: pointing at
+ * a card expands it sideways (the accordion in ProjectsSection) and the
+ * sheet rides up inside the room that opens. features joins into a
+ * " · " ribbon — SMS's is one verbatim sentence — tech renders as
+ * chips, use case is a sentence. Sized for the expanded card at its
+ * narrowest (768px, where it owns ~60% of a 536px row): the ribbon may
+ * take up to three wrap lines there, the other groups one.
+ *
+ * `lede` is optional and belongs to the stacked sheet only — the
+ * in-flow panel touch and small screens get. The expanded desktop card
+ * has no height for it (rows are capped by the row height), so CSS
+ * drops it exactly there; everywhere without hover it shows in full.
  */
 export const projects = [
   {
@@ -21,7 +26,10 @@ export const projects = [
     name: "SMS",
     url: "https://smsappbd.vercel.app",
     tags: [],
-    features: ["Records", "automatic grading", "online fees"],
+    lede: "Smart, secure & multilingual — everything your institution needs to manage, automate, and grow efficiently.",
+    features: [
+      "All-in-One School Management — Students, Teachers, Attendance, Exams, Finance, HR, Library, Transport & More",
+    ],
     tech: ["React", "Vite", "Tailwind"],
     useCase: "Runs a whole school online.",
   },

@@ -7,12 +7,16 @@ import { ArrowUpRight } from "./Icons.jsx";
  * width/height animation, so it costs nothing to run.
  *
  * The face carries the number, the name and the way out — and looks the
- * way it always did. Features, technology and use case ship in a sheet
- * below it: hovering expands the card sideways (the flex-grow accordion
- * — its neighbours give up their width) and the sheet rides up inside
- * the room that opens. Where there is no hover — touch, or a viewport
- * too narrow to expand — the sheet simply sits in the flow under a
- * hairline. Content is never hidden behind an input you don't have.
+ * way it always did. Overview, features, technology and use case ship
+ * in a sheet below it: hovering expands the card sideways (the
+ * flex-grow accordion — its neighbours give up their width) and the
+ * sheet rides up inside the room that opens, over a frosted ground —
+ * a thin paper veil on a real backdrop blur, so the amber sweep behind
+ * blooms instead of printing through the rows. Where there is no hover
+ * — touch, or a viewport too narrow to expand — the sheet sits in the
+ * flow as a tinted panel with an amber tick on every label, and keeps
+ * the `lede` the expanded card has no height for. Content is never
+ * hidden behind an input you don't have.
  *
  * An anchor, not a button: with JavaScript off it simply takes you to
  * the live project. With JS on, the click is intercepted and the
@@ -29,7 +33,7 @@ export default function ProjectCard({ project, onOpen }) {
         onOpen(project);
       }}
       aria-label={`Open live preview of ${project.name}`}
-      className="project-card group relative flex min-h-[10rem] flex-col justify-between overflow-hidden border-r border-b border-rule bg-paper p-4 text-left no-underline transition-colors duration-300 hover:bg-paper-raised sm:flex-1"
+      className="project-card group relative flex min-h-[7rem] flex-col justify-between overflow-hidden border-r border-b border-rule bg-paper p-4 text-left no-underline transition-colors duration-300 hover:bg-paper-raised"
     >
       <span
         aria-hidden="true"
@@ -72,11 +76,21 @@ export default function ProjectCard({ project, onOpen }) {
         </span>
       </span>
 
-      {/* Features / technology / use case — the accordion sheet. Label
-          and value are plain children: the base styles stack them like
-          a definition list, the expanded card lays them out as
-          label | value rows (global.css). */}
+      {/* Overview / features / technology / use case — the accordion
+          sheet. Plain label + value children: stacked like a definition
+          list in the flow (touch, small screens — the lede lives here),
+          inline-labelled one row per group in the expanded card, where
+          the lede is dropped for height (global.css). */}
       <span className="project-details">
+        {project.lede && (
+          <span className="project-details__group project-details__lede">
+            <span className="type-eyebrow text-muted">Overview</span>
+            <span className="text-[14px] leading-[1.6] text-ink-soft">
+              {project.lede}
+            </span>
+          </span>
+        )}
+
         <span className="project-details__group">
           <span className="type-eyebrow text-muted">Features</span>
           <span className="text-[13px] leading-[1.5] text-ink-soft">
@@ -86,7 +100,7 @@ export default function ProjectCard({ project, onOpen }) {
 
         <span className="project-details__group">
           <span className="type-eyebrow text-muted">Technology</span>
-          <span className="flex flex-wrap gap-1.5">
+          <span className="project-details__chips flex flex-wrap gap-1.5">
             {project.tech.map((chip) => (
               <span
                 key={chip}
