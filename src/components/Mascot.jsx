@@ -12,13 +12,17 @@
  * literal light values rather than theme tokens. It's a badge, not chrome:
  * like the amber under it, it doesn't invert on dark.
  *
- * The two loops live in global.css (`.mascot-bob`, `.mascot-eyes`) — two
+ * The two loops live in global.css (`.mascot-turn`, `.mascot-eyes`) — two
  * elements, one property each, so no two animations ever contend, and the
  * reduced-motion rule that already ships can flatten both to a still frame.
+ * The turn is 3D (`perspective()` inside the keyframes, pivoting at the
+ * chest), so the badge reads as a small figure looking around rather than
+ * a picture sliding.
  *
  * The shoulders deliberately run past the bottom of the viewBox: they are
- * clipped by the disc, and extending them past its edge means the bob can
- * never lift a sliver of amber out from under them.
+ * clipped by the disc, and extending them past its edge means neither the
+ * turn's tilt nor its foreshortening can lift a sliver of amber out from
+ * under them.
  */
 export default function Mascot() {
   return (
@@ -39,8 +43,8 @@ export default function Mascot() {
       <g clipPath="url(#mascot-disc)">
         <circle cx="16" cy="16" r="16" fill="#fcca24" />
 
-        {/* The character — bust + face, idling on `.mascot-bob`. */}
-        <g className="mascot-bob">
+        {/* The character — bust + face, turning on `.mascot-turn`. */}
+        <g className="mascot-turn">
           <path
             d="M16 19.8c-7.6 0-13.8 5.3-14.7 17.2h29.4C29.8 25.1 23.6 19.8 16 19.8Z"
             fill="#14110d"

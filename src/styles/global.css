@@ -844,22 +844,33 @@
  *
  * Two loops, two elements, one property each, so no two animations
  * ever contend — the same rule the glow layer is built on:
- *   .mascot-bob    transform   the bust idles up and settles
- *   .mascot-eyes   transform   a double take, once per 5.2s
+ *   .mascot-turn    transform   the bust turns in 3D, slowly
+ *   .mascot-eyes    transform   a double take, once per 5.2s
  *
- * Both keyframes end where they begin (translateY 0, scaleY 1), so the
- * global reduced-motion rule — 0.01ms, one iteration — parks the
- * character at rest instead of freezing it mid-blink.
+ * The turn is the whole mobile chrome's motion now — the glass around
+ * it is deliberately still. `perspective()` sits *inside* each keyframe
+ * so the rotation is drawn with depth instead of flattened, and the
+ * angle never approaches the 90° that would hide the face: ±16° with a
+ * hold at each end reads as a figurine looking around, not as a card
+ * flipping or an object rocking.
  *
- * `transform-box: fill-box` is what makes the blink work: without it
- * scaleY resolves against the SVG's view box, and the eyes would sink
+ * `transform-box: fill-box` does double duty: it puts the rotation's
+ * origin at the bust's own centre (the chest, so it pivots like a
+ * figure on a stand) and it is what makes the blink work — without it
+ * scaleY resolves against the SVG's view box and the eyes would sink
  * toward the badge's centre instead of squashing in place.
+ *
+ * Both keyframes end where they begin (rotateY -16deg, scaleY 1), so
+ * the global reduced-motion rule — 0.01ms, one iteration — parks the
+ * character facing forward rather than freezing it mid-turn.
  *
  * The art itself ships in Mascot.jsx with literal light values, so
  * nothing here is theme-aware — the badge is a logo, not chrome.
  * ------------------------------------------------------------------ */
-.mascot-bob {
-  animation: mascot-bob 3s ease-in-out infinite;
+.mascot-turn {
+  transform-box: fill-box;
+  transform-origin: 50% 50%;
+  animation: mascot-turn 7s ease-in-out infinite;
 }
 
 .mascot-eyes {
@@ -868,14 +879,20 @@
   animation: mascot-blink 5.2s ease-in-out infinite;
 }
 
-@keyframes mascot-bob {
+@keyframes mascot-turn {
   0%,
-  100% {
-    transform: translateY(0);
+  12% {
+    transform: perspective(420px) rotateY(-16deg) rotateX(3deg);
   }
 
-  50% {
-    transform: translateY(-1.3px);
+  38%,
+  62% {
+    transform: perspective(420px) rotateY(16deg) rotateX(-3deg);
+  }
+
+  88%,
+  100% {
+    transform: perspective(420px) rotateY(-16deg) rotateX(3deg);
   }
 }
 
