@@ -53,6 +53,21 @@
     scroll-snap-type: y mandatory;
     -webkit-text-size-adjust: 100%;
     color-scheme: light;
+    /* No painted scrollbar: wheel, touch, trackpad, keys and drag all
+       still move the document — only the track, thumb and the gutter
+       they reserve are suppressed, so the fixed chrome never sits
+       against a 15px strip of bare page. Firefox reads the standard
+       property, everything else the pseudo-element below. Scoped to the
+       document shell on purpose, so any future inner scroller keeps
+       its affordance. */
+    scrollbar-width: none;
+  }
+
+  html::-webkit-scrollbar,
+  body::-webkit-scrollbar {
+    width: 0;
+    height: 0;
+    display: none;
   }
 
   body {
@@ -642,44 +657,14 @@
 }
 
 /* ------------------------------------------------------------------ *
- * Scroll progress
+ * Scroll dots — see src/components/ScrollDots.jsx.
  *
- * A 2px rail glued to the right edge: faint rule track, amber fill that
- * grows with scroll position. Pure scroll-linked CSS via
- * `animation-timeline: scroll()` — no scroll listener, no rAF, no JS at
- * all, so it costs nothing on the main thread.
- *
- * The fill rests at scaleY(0): browsers without scroll-driven animation
- * support (inside the @supports gate) simply never see a bar, and the
- * track alone reads as the page edge. Hidden below lg by the markup —
- * the floating glass pills and tab bar already own mobile's edges.
+ * The right edge used to carry a 2px scroll-progress rail here (a
+ * scroll-linked CSS animation, no JS). It went with the scrollbar: the
+ * page now paints no track or thumb at all, and five dots on that same
+ * edge say where you are instead — an answer to "which section am I
+ * in", which a progress bar never gave.
  * ------------------------------------------------------------------ */
-.scroll-progress {
-  background: color-mix(in oklab, var(--color-rule) 50%, transparent);
-}
-
-.scroll-progress__fill {
-  background: var(--color-amber-deep);
-  transform: scaleY(0);
-  transform-origin: top;
-  will-change: transform;
-}
-
-@supports (animation-timeline: scroll()) {
-  .scroll-progress__fill {
-    animation: scroll-progress-grow linear both;
-    animation-timeline: scroll(root block);
-  }
-}
-
-@keyframes scroll-progress-grow {
-  from {
-    transform: scaleY(0);
-  }
-  to {
-    transform: scaleY(1);
-  }
-}
 
 /* ------------------------------------------------------------------ *
  * Liquid glass — SMALL SCREENS ONLY (≤768px)

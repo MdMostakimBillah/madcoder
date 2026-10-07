@@ -8,6 +8,7 @@ import Glow from "../components/Glow.jsx";
 import Motion from "../components/Motion.jsx";
 import ProfileCard from "../components/ProfileCard.jsx";
 import ProjectsSection from "../components/ProjectsSection.jsx";
+import ScrollDots from "../components/ScrollDots.jsx";
 import Sidebar from "../components/Sidebar.jsx";
 import SkillsSection from "../components/SkillsSection.jsx";
 ---
@@ -18,16 +19,12 @@ import SkillsSection from "../components/SkillsSection.jsx";
 
     <a href="#main" class="skip-link">Skip to content</a>
 
-    <!-- Scroll progress: a 2px amber rail on the right edge, driven purely
-         by a scroll-linked CSS animation (no scroll listener, no JS) — see
-         .scroll-progress in global.css. Desktop only; below lg the floating
-         glass chrome owns the edges. -->
-    <div
-      aria-hidden="true"
-      class="scroll-progress pointer-events-none fixed right-0 top-0 z-30 hidden h-dvh w-[2px] lg:block"
-    >
-      <span class="scroll-progress__fill block h-full w-full"></span>
-    </div>
+    <!-- Scroll dots: the right edge's position indicator, in the slot the
+         2px progress rail and, before it, the native scrollbar used to
+         fill. The page paints no scrollbar at all now — global.css drops
+         the track, thumb and gutter — and which dot is lit comes from the
+         same observer as the rail nav and the tab bar. -->
+    <ScrollDots client:load />
 
     <!--
       Normal document scroll: the page itself scrolls (no inner viewport),
