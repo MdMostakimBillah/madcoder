@@ -123,6 +123,38 @@ export default function ThemeToggle({ className = "" }) {
 
       transition.ready
         .then(() => {
+          let reveal;
+          try {
+            reveal = document.documentElement.animate(
+              [
+                { clipPath: `circle(0px at ${x}px ${y}px)` },
+                { clipPath: `circle(${radius}px at ${x}px ${y}px)` },
+              ],
+              {
+                duration: REVEAL_MS,
+                easing: "cubic-bezier(0.22, 0.61, 0.36, 1)",
+                // Without a fill the clip reverts to the stylesheet's
+                // collapsed start the moment the circle completes, which
+                // would close the view again for the frame before teardown.
+                fill: "forwards",
+                pseudoElement: "::view-transition-new(root)",
+              },
+            );
+          } catch {
+            // The animation couldn't be attached (an engine that takes
+            // `startViewTransition` but not `pseudoElement`). The stylesheet
+            // would otherwise hold the incoming view collapsed for the whole
+            // `waitUntil`, so end the transition now: an instant switch, not
+            // a frozen one.
+            transition.skipTransition?.();
+            return;
+          }
+
+          // Destroying the pseudo-tree cancels the animation, and a canceled
+          // animation rejects — swallow it so an interrupted reveal never
+          // surfaces as an unhandled rejection.
+          reveal.finished?.catch(() => {});
+
           // Hold the pseudo-tree open for the whole reveal: `waitUntil`
           // delays the teardown (and therefore `finished`) until the circle
           // has landed, so the snapshots can't be destroyed underneath a
@@ -132,18 +164,6 @@ export default function ThemeToggle({ className = "" }) {
               new Promise((resolve) => window.setTimeout(resolve, REVEAL_MS)),
             );
           }
-
-          document.documentElement.animate(
-            [
-              { clipPath: `circle(0px at ${x}px ${y}px)` },
-              { clipPath: `circle(${radius}px at ${x}px ${y}px)` },
-            ],
-            {
-              duration: REVEAL_MS,
-              easing: "cubic-bezier(0.22, 0.61, 0.36, 1)",
-              pseudoElement: "::view-transition-new(root)",
-            },
-          );
         })
         .catch(() => {
           /* the transition was skipped or its callback failed — the palette

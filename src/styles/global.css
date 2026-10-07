@@ -535,6 +535,23 @@
   display: block;
 }
 
+/* The incoming view starts collapsed, everywhere. Between the pseudo-tree
+ * appearing and ThemeToggle's WAAPI animation taking over there is a frame
+ * — sometimes two — and unclipped, that frame is a full-screen flash of the
+ * *finished* theme before the circle snaps back to zero and grows. Radius 0
+ * makes the origin irrelevant (it is corrected the instant the animation
+ * starts, from the same zero), so that frame shows the outgoing palette
+ * instead: seamless either way.
+ *
+ * Also the safety net for a browser that starts the transition but never
+ * runs the animation — the reveal simply doesn't reveal, rather than
+ * showing the result early. `fill: forwards` in ThemeToggle is what keeps
+ * this rule from snapping the view shut again once the circle is complete.
+ * ------------------------------------------------------------------ */
+::view-transition-new(root) {
+  clip-path: circle(0px at 0 0);
+}
+
 /* ------------------------------------------------------------------ *
  * Micro-interactions — hover lifts
  *
