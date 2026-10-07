@@ -19,16 +19,20 @@ import { useEffect, useRef } from "react";
  *   - breathing: a slow CSS pulse lives on `.glow-bloom`, a child, so
  *     JS and CSS never animate the same property.
  *
- * ── Warm hue travel ─────────────────────────────────────────────────
- * Paper is too light for amber to carry a glow, so the colour travels as
- * the cursor sweeps the page — gold → tangerine → salmon. Each frame writes
- * ONE custom property, `--t`, and global.css turns it into cross-fading
- * opacities on three pre-baked gradients — a style recalc and a composite,
- * where re-colouring the gradient every frame would repaint the layer.
+ * ── Light-mode travel ───────────────────────────────────────────────
+ * Paper is too light for amber to carry a glow, so in light mode what
+ * travels is the bloom's *saturation* — soft gold → sunny gold → vivid
+ * gold as the cursor sweeps the page. All three cores share one luminance
+ * (the contrast ceiling is fixed by the rail blurb) and differ only in how
+ * much chroma they pack, so the light intensifies instead of fading out
+ * over the right half of the page. Each frame writes ONE custom property,
+ * `--t`, and global.css turns it into cross-fading opacities on three
+ * pre-baked gradients — a style recalc and a composite, where re-colouring
+ * the gradient every frame would repaint the layer.
  *
  * `--t` is derived from the eased position rather than the raw pointer, so
- * the hue and the bloom travel together instead of the colour snapping ahead
- * of the light it belongs to.
+ * the colour and the bloom travel together instead of the hue snapping
+ * ahead of the light it belongs to.
  */
 export default function Glow() {
   const layerRef = useRef(null);
@@ -140,11 +144,11 @@ export default function Glow() {
     >
       <div ref={layerRef} className="glow-layer opacity-0">
         <div className="glow-bloom">
-          {/* Ordered back-to-front: amber is the resting state, salmon
-              lands on top as `--t` rises. */}
-          <div className="glow-core glow-amber" />
-          <div className="glow-core glow-tangerine" />
-          <div className="glow-core glow-salmon" />
+          {/* Ordered back-to-front: `start` (t = 0, bottom-left) is the
+              resting state; `end` lands on top as `--t` rises. */}
+          <div className="glow-core glow-start" />
+          <div className="glow-core glow-mid" />
+          <div className="glow-core glow-end" />
         </div>
       </div>
     </div>

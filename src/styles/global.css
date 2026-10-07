@@ -158,24 +158,36 @@
  *   .glow-bloom    CSS     the slow idle pulse
  *   .glow-core ×3  JS      opacity, cross-faded from `--t`
  *
- * ── Warm hue travel (light mode) ────────────────────────────────────
- * Paper is so light that amber at any useful strength washes out, so the
- * bloom's colour now travels as the cursor sweeps: gold → tangerine →
- * salmon. Glow.jsx writes a single number, `--t` (0→1, from the *eased*
- * position so the colour arrives with the glow), and the three cores below
- * turn it into cross-fading opacities — one custom-property write per frame.
- * That write costs a style recalc and nothing else: no layout, and no
- * repaint, because the gradients themselves never change.
+ * ── Light mode: a glow you cannot make brighter ─────────────────────
+ * Paper (#faf8f4) is already near white, so a bloom here can only be a
+ * tint — and tint is bought with *luminance*, which is precisely what body
+ * copy is measured against. That budget is small and finite: the rail
+ * blurb (`--color-ash`, 5.06:1 on bare paper) allows the background to
+ * lose 0.111 of luminance, no more, wherever the bloom passes behind it.
  *
- * The gradients are pre-baked on purpose: re-colouring a gradient every
- * frame repaints the layer, cross-fading opacity does not.
+ * Chroma, on the other hand, is nearly free at a fixed luminance — and
+ * yellow is the one hue light enough to carry a lot of it before it hits
+ * that ceiling. So each core's centre is solved rather than guessed: the
+ * deepest yellow whose blend still leaves ash at ≥4.5:1 (worst case
+ * 4.51:1; 4.76:1 measured behind the blurb itself, against 4.77:1 on bare
+ * paper — the redesign costs nothing). That buys chroma 40 → 53 → 65
+ * across the sweep, where the old gold → tangerine → salmon travel managed
+ * 27 → 14 → 8 and died out entirely over the right half of the page.
  *
- * Peak alphas are not a taste call — they are the strongest value that
- * keeps `--color-ash` body copy (the rail blurb, 5.06:1 on bare paper)
- * at ≥4.5:1 where the bloom passes behind it. Shoulder stops run at ~55%
- * of peak, so everything outside the very centre has margin to spare.
+ * The falloff is a sampled Gaussian (σ ≈ 0.65) whose tail only reaches
+ * zero at the very edge: no shoulder kink, no visible 78% ring — the
+ * stain the old linear ramp left behind. Inside 45% the ramp is a single
+ * hue; past that it deepens to tangerine at alphas so small (≤0.03) they
+ * cost nothing in contrast.
+ *
+ * Glow.jsx writes ONE custom property, `--t` (from the *eased* position,
+ * so the colour arrives with the light), and the three cores below turn it
+ * into cross-fading opacities — a style recalc and a composite, never a
+ * repaint: the gradients are pre-baked on purpose. Re-colouring a
+ * gradient every frame repaints the layer; cross-fading opacity does not.
+ *
  * Dark mode keeps the original amber bloom untouched: it had the contrast
- * the light one lacked, and the travel is a remedy for paper, not a theme.
+ * the light one lacked, and this budget is a remedy for paper, not a theme.
  * ------------------------------------------------------------------ */
 @utility glow-layer {
   position: absolute;
@@ -205,38 +217,57 @@
 }
 
 /* Triangle weights around t = 0.5: each stop peaks where it should and the
-   two neighbours sum to 1, so total ink stays constant across the travel. */
-@utility glow-amber {
+   two neighbours sum to 1, so total ink stays constant across the travel.
+   The middle term is `2 - 2t`, not `1 - 2t` — the latter falls to zero at
+   the very t it must peak at, emptying the bloom mid-sweep.
+
+   Backgrounds are a sampled Gaussian, each stop solved to sit exactly on
+   the contrast ceiling for its radius (see the header comment). `start` is
+   t = 0 (bottom-left of the sweep), `end` is t = 1 (top-right); only the
+   centre hue differs between them — the corona is shared, so the travel
+   reads as the light intensifying rather than as a colour change. */
+@utility glow-start {
   opacity: clamp(0, calc(1 - var(--t) * 2), 1);
   background: radial-gradient(
     circle closest-side,
-    rgb(252 202 36 / 0.28),
-    rgb(252 202 36 / 0.16) 46%,
-    rgb(252 202 36 / 0) 78%
+    rgb(255 221 51 / 0.445) 0%,
+    rgb(255 221 51 / 0.418) 15%,
+    rgb(255 221 51 / 0.35) 30%,
+    rgb(255 221 51 / 0.261) 45%,
+    rgb(255 221 51 / 0.176) 60%,
+    rgb(255 221 51 / 0.106) 75%,
+    rgb(255 171 61 / 0.029) 88%,
+    rgb(255 171 61 / 0) 100%
   );
 }
 
-/* Triangle weights around t = 0.5: each stop peaks where it should and the
-   two neighbours sum to 1, so total ink stays constant across the travel.
-   The middle term is `2 - 2t`, not `1 - 2t` — the latter falls to zero at
-   the very t it must peak at, emptying the bloom mid-sweep. */
-@utility glow-tangerine {
+@utility glow-mid {
   opacity: clamp(0, min(calc(var(--t) * 2), calc(2 - var(--t) * 2)), 1);
   background: radial-gradient(
     circle closest-side,
-    rgb(255 171 61 / 0.19),
-    rgb(255 171 61 / 0.11) 46%,
-    rgb(255 171 61 / 0) 78%
+    rgb(255 230 61 / 0.607) 0%,
+    rgb(255 230 61 / 0.568) 15%,
+    rgb(255 230 61 / 0.47) 30%,
+    rgb(255 230 61 / 0.347) 45%,
+    rgb(255 221 51 / 0.176) 60%,
+    rgb(255 221 51 / 0.106) 75%,
+    rgb(255 171 61 / 0.029) 88%,
+    rgb(255 171 61 / 0) 100%
   );
 }
 
-@utility glow-salmon {
+@utility glow-end {
   opacity: clamp(0, calc(var(--t) * 2 - 1), 1);
   background: radial-gradient(
     circle closest-side,
-    rgb(255 155 122 / 0.17),
-    rgb(255 155 122 / 0.1) 46%,
-    rgb(255 155 122 / 0) 78%
+    rgb(255 235 69 / 0.78) 0%,
+    rgb(255 235 69 / 0.726) 15%,
+    rgb(255 235 69 / 0.593) 30%,
+    rgb(255 235 69 / 0.431) 45%,
+    rgb(255 221 51 / 0.176) 60%,
+    rgb(255 221 51 / 0.106) 75%,
+    rgb(255 171 61 / 0.029) 88%,
+    rgb(255 171 61 / 0) 100%
   );
 }
 
@@ -244,12 +275,12 @@
    theme. Only the weight is set here: `.dark .glow-core` further down owns
    the dark background (amber reads far hotter on near-black, so it drops to
    0.14), and it must keep winning, or the dark bloom goes too hot. */
-.dark .glow-amber {
+.dark .glow-start {
   opacity: 1;
 }
 
-.dark .glow-tangerine,
-.dark .glow-salmon {
+.dark .glow-mid,
+.dark .glow-end {
   display: none;
 }
 
