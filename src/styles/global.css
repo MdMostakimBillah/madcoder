@@ -93,16 +93,23 @@
     --shadow-card: 0 18px 50px -20px rgb(20 17 13 / 0.35);
 
     /* Liquid glass — the mobile chrome only (≤768px, gated at the end of
-       this file). Every value is theme-aware: `.dark` flips the whole set
-       below, so no component ever has to ask which theme is live. */
+       this file). Five values, and they are the whole material: what it is
+       made of, where it ends, what the light does at its rim, what it
+       lands on. Every value is theme-aware: `.dark` flips the set below,
+       so no component ever has to ask which theme is live. (The refraction
+       itself is not a token — it is the #lg-dist filter in Base.astro.) */
     --glass-tint: rgb(255 255 255 / 0.42);
     --glass-border: rgb(255 255 255 / 0.62);
-    --glass-highlight: rgb(255 255 255 / 0.85);
-    --glass-inner: rgb(20 17 13 / 0.07);
+    --glass-highlight: rgb(255 255 255 / 0.75);
     --glass-ambient: 0 16px 40px -16px rgb(20 17 13 / 0.45);
-    --glass-data: rgb(74 69 61 / 0.55);
-    --glass-sheen: rgb(255 255 255 / 0.32);
-    --glass-blur: 14px;
+
+    /* The capture pass on `.glass-refract`: a no-op blur whose only job
+       is to make `backdrop-filter` copy the page at all. It lives in a
+       variable because the CSS minifier rewrites the literal `blur(0px)`
+       to `blur()` — invalid, so the whole declaration is dropped, and
+       with it every trace of the glass. A custom property's token stream
+       is not up for rewriting, so here it survives the build intact. */
+    --glass-capture: blur(0px);
   }
 
   ::selection {
@@ -504,16 +511,14 @@
   --shadow-card: 0 18px 50px -20px rgb(0 0 0 / 0.7);
 
   /* Liquid glass on dark: translucent charcoal, never solid black — the
-     data layer has to stay visible *through* the material. The edge
-     highlight is warm white at low alpha: the only thing that reads as
-     "light" on a dark surface. */
+     page has to read *through* the material rather than sit on a sticker.
+     The hairline and the rim are warm white at low alpha: the only
+     things that read as "light" on a dark surface, and both are held
+     down so they glow rather than stripe. */
   --glass-tint: rgb(28 25 21 / 0.45);
   --glass-border: rgb(244 240 232 / 0.16);
-  --glass-highlight: rgb(244 240 232 / 0.3);
-  --glass-inner: rgb(0 0 0 / 0.3);
+  --glass-highlight: rgb(244 240 232 / 0.28);
   --glass-ambient: 0 16px 40px -16px rgb(0 0 0 / 0.6);
-  --glass-data: rgb(244 240 232 / 0.34);
-  --glass-sheen: rgb(244 240 232 / 0.14);
 }
 
 /* The amber bloom reads far hotter against near-black — soften it. */
@@ -696,47 +701,64 @@
 /* ------------------------------------------------------------------ *
  * Liquid glass — SMALL SCREENS ONLY (≤768px)
  *
- * Three boxes, because `backdrop-filter` can only ever blur what is
- * painted *behind* an element — one box could blur the page but never
- * animate a data field of its own. The shell carries the caller's
- * layout; behind the surface sit two decoration layers; the surface is
- * the actual material:
+ * Three boxes, because the capture, the surface light and the layout
+ * each want to be painted separately:
  *
- *   glass-shell   layout, rounding, ambient shadow, pointer events
- *   ├ .glass-data    z:-2 · dot grid + tick lanes, drifting slowly
- *   ├ .glass-surface z:-1 · backdrop blur+saturate, tint, hairline,
- *   │                       rim light, sheen (its ::after)
- *   └ children         paint above the glass: full contrast, never
- *                       tinted, never blurred
+ *   glass-shell        layout, rounding, ambient shadow, pointer events
+ *   ├ .glass-refract   z:-2 · THE material: the page behind the pill,
+ *   │                    frosted and bent by #lg-dist (in Base.astro)
+ *   ├ .glass-surface   z:-1 · the flat part: tint, hairline, the
+ *   │                    specular rim that says light is landing on it
+ *   └ children             paint above the glass: full contrast, never
+ *                           tinted, never blurred
+ *
+ * ── Why two material layers ───────────────────────────────────────
+ * `backdrop-filter` only ever sees what is painted *behind* an element,
+ * and `filter` only ever sees what that element paints — so capture and
+ * distortion belong on ONE element (grab the page, hand it straight to
+ * the filter), and everything that must stay crisp belongs on another,
+ * above it. The other order — filtering the tint and the content — is
+ * how you warp your own text into the bargain.
+ *
+ * The capture is `blur(0px)`: the cheapest pass there is, a straight
+ * copy, and deliberately not the frost. Any real blur there and
+ * Chromium stops passing the backdrop through the filter at all —
+ * measured 0.7/255 of pixels move instead of 84/255 — so the frost is
+ * an feGaussianBlur *inside* #lg-dist, between capture and
+ * displacement. Order: soften, then bend, so the glass refracts
+ * something already soft instead of smearing its own edges.
+ *
+ * `.glass-refract` sits 60px outside the silhouette against a
+ * worst-case diagonal displacement of 49.5px (scale 70 → ±35px per
+ * axis): the filter can only sample inside its region, and a region
+ * ending at the pill's edge would pull transparent pixels into the rim.
+ * The shell's `overflow: hidden` clips that overscan back to the
+ * rounded shape.
  *
  * ── The mobile gate ────────────────────────────────────────────────
- * Outside the media query the two layers are `display: none` and the
- * shell keeps every utility class it shipped with — so tablets
- * (769–1023px) and desktop are byte-identical to before this section
- * existed. Inside the gate, these unlayered rules outrank Tailwind's
- * `@layer utilities`, which is how the old single-layer frosted pill
+ * Outside the media query neither material layer exists and the shell
+ * keeps every utility class it shipped with — so tablets (769–1023px)
+ * and desktop are byte-identical to before this section existed. Inside
+ * the gate, these unlayered rules outrank Tailwind's `@layer
+ * utilities`, which is how the old single-layer frosted pill
  * (bg-paper/70 + backdrop-blur-xl + white border) is retired at ≤768
  * without a single variant in the markup.
  *
  * ── Why `z-index: 0`, not `isolation: isolate` ────────────────────
- * The negative z-indices need a stacking context to stay local, but
- * `isolation: isolate` forms a *backdrop root* — it would hide the
- * page from the surface's blur and the glass would sample nothing. A
- * plain z-index context contains the layers without touching the
+ * The material layers' negative z-index needs a stacking context to
+ * stay local, but `isolation: isolate` forms a *backdrop root* — it
+ * would hide the page from the capture and the glass would refract
+ * nothing. A plain z-index context contains them without touching the
  * backdrop. (Filters, opacity and masks do form backdrop roots; a
- * z-index context does not.)
- *
- * Motion is transform-only, CSS-only: two data layers and the sheen
- * animate forever; everything else is static. The global
- * `prefers-reduced-motion` rule collapses them to a single frame —
- * the sheen's *base* state is parked off-element, so reduced motion
- * gets no glass reflection at all instead of a frozen one.
+ * z-index context does not — and the filter on `.glass-refract` is on
+ * the capturing element itself, where it is the point rather than the
+ * hazard.)
  * ------------------------------------------------------------------ */
 
-/* Base state, before the gate: the decorative layers don't exist above
-   768px. Declared ahead of the media query on purpose — same
-   specificity, so source order decides, and the gate must win. */
-.glass-data,
+/* Base state, before the gate: no material above 768px. Declared ahead
+   of the media query on purpose — same specificity, so source order
+   decides, and the gate must win. */
+.glass-refract,
 .glass-surface {
   display: none;
 }
@@ -745,7 +767,7 @@
   .glass-shell {
     position: relative;
     z-index: 0;
-    overflow: hidden; /* clip data + sheen to the rounded silhouette */
+    overflow: hidden; /* keeps children inside the rounded silhouette */
     border: none; /* the surface draws the real hairline */
     background: none; /* tint lives on the surface now */
     box-shadow: var(--glass-ambient);
@@ -767,146 +789,54 @@
     backdrop-filter: none;
   }
 
-  .glass-data,
+  /* Geometry, shared by both material layers. The refract layer runs
+     60px past the box on every side (headroom for the displacement —
+     see the header); the surface stops at the silhouette, because the
+     tint and the rim have to land exactly on the edge. */
+  .glass-refract,
+  .glass-surface {
+    position: absolute;
+    pointer-events: none;
+    border-radius: inherit;
+  }
+
+  /* ── The material: capture, frost, bend ──────────────────────────
+     `--glass-capture` (a literal `blur(0px)`, parked in a variable so
+     the minifier can't invalidate it — see the token block) copies the
+     page and does nothing else; the frost and the refraction are both
+     the filter's job, in that order. z:-2 puts the layer under the
+     tint, so what bends is the world, not the glass sitting on it. */
+  .glass-refract {
+    display: block;
+    inset: -60px;
+    z-index: -2;
+    backdrop-filter: var(--glass-capture);
+    filter: url(#lg-dist);
+  }
+
+  /* ── The surface ────────────────────────────────────────────────
+     Tint, one hairline edge, and the specular: a 1px catch on the
+     top-left where the light is, pooling into a 5px glow inside the
+     rim. It sits above the refraction so it stays straight — warped
+     highlights read as wet rather than as glass. No backdrop pass of
+     its own: that would be a second sampling of the page, paid to
+     blur what the layer below has already frosted. */
   .glass-surface {
     display: block;
-    position: absolute;
     inset: 0;
-    pointer-events: none;
-    border-radius: inherit;
-  }
-
-  .glass-data {
-    z-index: -2;
-    opacity: 0.5;
-  }
-
-  /* ── The data field ──────────────────────────────────────────────
-     A dot grid sliding one full cell per loop (the translate equals
-     the background-size, so the wrap is invisible), plus three lanes
-     of ticks drifting the other way on a shared 52px tile — also
-     seamless. `inset: -60px` overhangs every edge by more than one
-     full step, so no gap ever opens during the drift. */
-  .glass-data::before {
-    content: "";
-    position: absolute;
-    inset: -60px;
-    background-image: radial-gradient(
-      circle,
-      var(--glass-data) 1px,
-      transparent 1.2px
-    );
-    background-size: 20px 20px;
-    animation: glass-data-drift 45s linear infinite;
-    will-change: transform;
-  }
-
-  .glass-data::after {
-    content: "";
-    position: absolute;
-    inset: -60px;
-    background-image: linear-gradient(
-        90deg,
-        var(--glass-data) 0 12px,
-        transparent 12px
-      ),
-      linear-gradient(90deg, var(--glass-data) 0 7px, transparent 7px),
-      linear-gradient(90deg, var(--glass-data) 0 16px, transparent 16px);
-    background-size: 52px 1.5px, 52px 1.5px, 52px 1.5px;
-    background-repeat: repeat-x, repeat-x, repeat-x;
-    background-position: 0 33%, 0 50%, 0 67%;
-    opacity: 0.7;
-    animation: glass-data-stream 60s linear infinite;
-    will-change: transform;
-  }
-
-  /* ── The material ────────────────────────────────────────────────
-     One backdrop pass (blur 14px + saturate 1.5 — moderate on
-     purpose), a translucent tint, a 1px hairline, and the two rim
-     strokes: highlight along the top edge, the slab's own thickness
-     along the bottom. */
-  .glass-surface {
     z-index: -1;
-    /* Unprefixed only — see the minifier note on .glass-shell above.
-       Safari ≤17 gets no blur here, but the shell above still carries the
-       utility's frosted backdrop, so old Safari degrades to the original
-       single-layer glass rather than to a flat sticker. */
-    backdrop-filter: blur(var(--glass-blur)) saturate(1.5);
     background: var(--glass-tint);
     border: 1px solid var(--glass-border);
-    box-shadow: inset 0 1px 0 0 var(--glass-highlight),
-      inset 0 -1px 0 0 var(--glass-inner);
-  }
-
-  /* Refraction: light pooling where the material curves at the edge.
-     An inset blur reads as thickness for free — no SVG displacement
-     filter, no second backdrop pass. */
-  .glass-surface::before {
-    content: "";
-    position: absolute;
-    inset: 0;
-    border-radius: inherit;
-    box-shadow: inset 0 0 12px -5px var(--glass-highlight),
-      inset 0 -8px 12px -9px var(--glass-inner);
-  }
-
-  /* The reflection: one soft band of light crossing the surface every
-     15s. It lives on the surface, inside the glass's negative-z
-     context — so it passes over the material but *under the content*:
-     text is never washed by it. Base state is parked off-element, so
-     when reduced motion collapses the animation the sheen simply
-     doesn't exist rather than freezing mid-sweep. */
-  .glass-surface::after {
-    content: "";
-    position: absolute;
-    top: -60%;
-    bottom: -60%;
-    left: 0;
-    width: 100%;
-    background: linear-gradient(
-      105deg,
-      transparent 25%,
-      var(--glass-sheen) 50%,
-      transparent 75%
-    );
-    transform: translateX(-140%);
-    animation: glass-sheen 15s ease-in-out infinite;
-    will-change: transform;
-    pointer-events: none;
+    box-shadow:
+      inset 1px 1px 0 0 var(--glass-highlight),
+      inset 0 0 5px 0 var(--glass-highlight);
   }
 
   /* ── Taskbar ─────────────────────────────────────────────────────
      Icon-only, so the link keeps the bare utility shape: a 44px circle
      (h-11 w-11 rounded-full) that the travelling pill measures and
      covers exactly. Nothing about the taskbar changes across the gate
-     above — only the glass layers appear. */
-}
-
-@keyframes glass-data-drift {
-  from {
-    transform: translate3d(0, 0, 0);
-  }
-  to {
-    transform: translate3d(-20px, -20px, 0);
-  }
-}
-
-@keyframes glass-data-stream {
-  from {
-    transform: translate3d(0, 0, 0);
-  }
-  to {
-    transform: translate3d(-52px, 0, 0);
-  }
-}
-
-@keyframes glass-sheen {
-  from {
-    transform: translateX(-140%);
-  }
-  to {
-    transform: translateX(340%);
-  }
+     above — only the surface appears. */
 }
 
 /* ------------------------------------------------------------------ *

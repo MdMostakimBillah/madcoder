@@ -162,6 +162,48 @@ const jsonLd = {
     </script>
   </head>
   <body>
+    <!-- ── Liquid glass: the refraction the mobile chrome is made of ──
+         Kept once, in the layout, because `filter: url(#lg-dist)` in
+         global.css resolves against the document — every page needs the
+         definition in its own DOM. `display: none` costs nothing: filter
+         primitives are never laid out, they are just resolved by id.
+
+         The displacement is the reference recipe verbatim (fractal noise
+         at 0.008, two octaves, seed 92, blurred to a smooth field,
+         mapping ±35px of it over the captured page). Two additions, both
+         forced by measurement:
+
+           · the frost is an feGaussianBlur *inside* the filter, because
+             the element's own `backdrop-filter` has to stay at `blur(0)`
+             — give it any real blur and Chromium stops passing the
+             backdrop through the filter at all, and the refraction
+             disappears with it (checked: 0.7/255 of pixel movement vs
+             84/255 with the blur moved in here);
+           · `color-interpolation-filters="sRGB"` so the pass runs in the
+             space the screen composites in — linearRGB moves the page's
+             luminance by a fraction either way, and sRGB is the one that
+             matches the unfilitered backdrop it is standing in for. -->
+    <svg style="display: none" aria-hidden="true" focusable="false">
+      <filter id="lg-dist" x="0%" y="0%" width="100%" height="100%" color-interpolation-filters="sRGB">
+        <feTurbulence
+          type="fractalNoise"
+          baseFrequency="0.008 0.008"
+          numOctaves="2"
+          seed="92"
+          result="noise"
+        />
+        <feGaussianBlur in="noise" stdDeviation="2" result="blurred" />
+        <feGaussianBlur in="SourceGraphic" stdDeviation="3" result="soft" />
+        <feDisplacementMap
+          in="soft"
+          in2="blurred"
+          scale="70"
+          xChannelSelector="R"
+          yChannelSelector="G"
+        />
+      </filter>
+    </svg>
+
     <slot />
   </body>
 </html>
