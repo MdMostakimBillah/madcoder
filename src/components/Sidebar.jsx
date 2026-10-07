@@ -13,6 +13,7 @@ import {
 } from "./Icons.jsx";
 import ThemeToggle from "./ThemeToggle.jsx";
 import LiquidGlass from "./LiquidGlass.jsx";
+import Mascot from "./Mascot.jsx";
 
 const NAV_IDS = navItems.map((item) => item.id);
 const CV_URL = asset(CV_FILE);
@@ -125,26 +126,18 @@ export default function Sidebar() {
     <>
     <aside className="fixed inset-x-0 top-0 z-40 px-4 py-3 pointer-events-none sm:px-6 lg:sticky lg:top-0 lg:z-10 lg:block lg:self-start lg:px-0 lg:py-0 lg:pointer-events-auto">
       <div className="relative flex items-center justify-between gap-2 lg:flex-col lg:justify-start lg:gap-0 lg:min-h-dvh lg:py-14">
-        {/* ── mobile, left pill: logo + name + profession. `flex-1` so the
-             card stretches to sit just beside the action pill on the right
-             instead of hugging its own text. ── */}
-        {/* ── mobile, left pill: logo + name + profession. `flex-1` so the
+        {/* ── mobile, left pill: mascot + name + profession. `flex-1` so the
              card stretches to sit just beside the action pill on the right
              instead of hugging its own text. LiquidGlass swaps the old
              one-level frosted background for the layered material at
-             ≤768px only — see .glass-shell in global.css. ── */}
+             ≤768px only — see .glass-shell in global.css.
+             The mascot is drawn (and animated) rather than a photo — same
+             28px slot, so the pill's layout never changes. ── */}
         <LiquidGlass
           data-reveal
           className="pointer-events-auto flex min-w-0 flex-1 items-center gap-2.5 rounded-full border border-white/50 bg-paper/70 py-1.5 pl-1.5 pr-4 shadow-[0_16px_40px_-16px_rgb(20_17_13/0.5)] backdrop-blur-xl backdrop-saturate-150 dark:border-white/10 lg:hidden"
         >
-          <img
-            src={asset("img/mostakim.webp")}
-            alt=""
-            width="28"
-            height="28"
-            aria-hidden="true"
-            className="h-7 w-7 shrink-0 rounded-full object-cover"
-          />
+          <Mascot />
 
           <div className="min-w-0">
             <a

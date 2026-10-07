@@ -896,3 +896,67 @@
     transform: translateX(340%);
   }
 }
+
+/* ------------------------------------------------------------------ *
+ * Mascot — the animated avatar in the mobile identity pill.
+ *
+ * Two loops, two elements, one property each, so no two animations
+ * ever contend — the same rule the glow layer is built on:
+ *   .mascot-bob    transform   the bust idles up and settles
+ *   .mascot-eyes   transform   a double take, once per 5.2s
+ *
+ * Both keyframes end where they begin (translateY 0, scaleY 1), so the
+ * global reduced-motion rule — 0.01ms, one iteration — parks the
+ * character at rest instead of freezing it mid-blink.
+ *
+ * `transform-box: fill-box` is what makes the blink work: without it
+ * scaleY resolves against the SVG's view box, and the eyes would sink
+ * toward the badge's centre instead of squashing in place.
+ *
+ * The art itself ships in Mascot.jsx with literal light values, so
+ * nothing here is theme-aware — the badge is a logo, not chrome.
+ * ------------------------------------------------------------------ */
+.mascot-bob {
+  animation: mascot-bob 3s ease-in-out infinite;
+}
+
+.mascot-eyes {
+  transform-box: fill-box;
+  transform-origin: 50% 50%;
+  animation: mascot-blink 5.2s ease-in-out infinite;
+}
+
+@keyframes mascot-bob {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+
+  50% {
+    transform: translateY(-1.3px);
+  }
+}
+
+@keyframes mascot-blink {
+  0%,
+  86% {
+    transform: scaleY(1);
+  }
+
+  88% {
+    transform: scaleY(0.1);
+  }
+
+  90% {
+    transform: scaleY(1);
+  }
+
+  92% {
+    transform: scaleY(0.1);
+  }
+
+  94%,
+  100% {
+    transform: scaleY(1);
+  }
+}
