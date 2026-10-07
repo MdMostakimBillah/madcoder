@@ -1,25 +1,33 @@
 import { useEffect } from "react";
+import gsap from "gsap";
+import { ScrollTrigger } from "gsap/ScrollTrigger";
 
 /**
  * Motion layer — GSAP owns scroll reveals and the hover micro-interactions.
  *
  * ── Why there is a head script ────────────────────────────────────────────
  * "Hide, then animate" only reads as intentional if the hiding happens
- * *before first paint*. GSAP is deliberately loaded after hydration (so it
- * never sits on the critical path), which means by the time it lands the
- * copy is already on screen — setting opacity:0 then would look like the
- * page blinking out. The inline script in Base.astro therefore adds
- * `html.motion` up front and arms a failsafe in case we never boot.
+ * *before first paint*. GSAP is a static import here: it ships inside this
+ * island's chunk, fetched in the first wave alongside everything else, and
+ * only *runs* once React hydrates this component — after the copy is on
+ * screen, so setting opacity:0 then would look like the page blinking out.
+ * (A dynamic import used to live here; its second round trip held the rail
+ * empty for well over a second on a cold cache before the entrance could
+ * begin.) The inline script in Base.astro therefore adds `html.motion` up
+ * front and arms a failsafe in case we never boot.
  *
  * Boot sequence, in order:
  *   1. stand down the head script's failsafe
- *   2. dynamic-import gsap + ScrollTrigger
+ *   2. register gsap + ScrollTrigger (bundled — no second fetch)
  *   3. write the same hidden state as inline styles
- *   4. drop `html.motion` — the inline styles now hold the elements hidden,
- *      so removing the class changes nothing visually
- *   5. create the ScrollTriggers
+ *   4. create the ScrollTriggers and run the one-time refresh
+ *   5. drop `html.motion` — last: the inline styles now hold the elements
+ *      hidden, so removing the class changes nothing visually, and the
+ *      refresh's reflow (setup's one long task) lands behind the gate
+ *      instead of inside the entrance, where it used to stall the first
+ *      frames for a sixth of a second while the nav items arrived.
  *
- * Step 4 has to follow step 3: the other way round un-hides every element
+ * Step 5 has to follow step 3: the other way round un-hides every element
  * whose trigger hasn't fired yet. Elements GSAP skips (anything hidden at
  * this breakpoint, e.g. the desktop-only rail block) rely on that — they lose
  * the prime class with no inline styles, so they come back natural rather than
@@ -145,7 +153,6 @@ export default function Motion() {
   useEffect(() => {
     if (prefersReduced()) return undefined;
 
-    let cancelled = false;
     let ctx = null;
     let mm = null;
     let booted = false;
@@ -153,21 +160,11 @@ export default function Motion() {
     // (1) We're alive — the head failsafe can stand down.
     clearTimeout(window.__motionFail);
 
-    (async () => {
-      let gsap;
-      let ScrollTrigger;
-      try {
-        [{ gsap }, { ScrollTrigger }] = await Promise.all([
-          import("gsap"),
-          import("gsap/ScrollTrigger"),
-        ]);
-      } catch (err) {
-        console.warn("[motion] GSAP unavailable, page left static", err);
-        document.documentElement.classList.remove("motion");
-        return;
-      }
-      if (cancelled) return;
-
+    // One scope for the setup so its early exits still read as exits. gsap
+    // is imported at the top of the file: bundled into this island's chunk
+    // and fetched in the first wave, there is no post-hydration import
+    // round trip gating the entrance anymore.
+    (() => {
       gsap.registerPlugin(ScrollTrigger);
       // The page scrolls the window now — the default scroller, so no
       // ScrollTrigger.defaults() override is needed.
@@ -192,11 +189,7 @@ export default function Motion() {
           const fills = laidOut(gsap, BAR);
           gsap.set(fills, { scaleX: 0 });
 
-          // (4) hand the hidden state over from CSS to GSAP
-          document.documentElement.classList.remove("motion");
-          booted = true;
-
-          // (5a) one trigger per element — each lands exactly in place.
+          // (4a) one trigger per element — each lands exactly in place.
           // On boot, anything already in the viewport *waits* its turn:
           // the rail entrance plays first (name → subtitle → description →
           // nav), then the main content follows — one ordered sequence,
@@ -221,7 +214,7 @@ export default function Motion() {
             });
           });
 
-          // (5b) parallax — scrubbed to scroll position, never triggered
+          // (4b) parallax — scrubbed to scroll position, never triggered
           // once. Matched, not measured: the breakpoint decides how much
           // work a scroll frame costs (see PARALLAX_* above).
           mm = gsap.matchMedia();
@@ -232,7 +225,7 @@ export default function Motion() {
             buildParallax(gsap, PARALLAX_MOBILE, true),
           );
 
-          // (5c) rail entrance — the load choreography itself. DOM order
+          // (4c) rail entrance — the load choreography itself. DOM order
           // in the rail *is* the spec order: name, subtitle, description,
           // nav (the mobile pills and tab bar filter in at whichever
           // breakpoint is live). A tight 60ms stagger over a 450ms fade:
@@ -249,7 +242,7 @@ export default function Motion() {
             clearProps: "opacity,transform",
           });
 
-          // (5d) skill bars — the fill grows to its level as the row
+          // (4d) skill bars — the fill grows to its level as the row
           // arrives. One trigger per bar on the same 92% line the reveals
           // use, so no bar ever fills off-screen at a narrow breakpoint
           // where the section runs taller than the viewport.
@@ -287,6 +280,14 @@ export default function Motion() {
         });
 
         ScrollTrigger.refresh();
+
+        // (5) hand the hidden state over from CSS to GSAP. The inline
+        // styles hold every element (bars included) hidden, so dropping
+        // the class changes nothing visually — and because it happens
+        // only now, the refresh's reflow is finished before the first
+        // entrance frame instead of stuttering into it.
+        document.documentElement.classList.remove("motion");
+        booted = true;
       } catch (err) {
         console.warn("[motion] setup failed, page left static", err);
         ctx?.revert();
@@ -295,8 +296,7 @@ export default function Motion() {
     })();
 
     return () => {
-      cancelled = true;
-      // Never got as far as step 4? Make sure nothing stays hidden.
+      // Never got as far as step 5? Make sure nothing stays hidden.
       if (!booted) document.documentElement.classList.remove("motion");
       mm?.revert();
       ctx?.revert();
