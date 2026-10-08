@@ -2,6 +2,7 @@
 import { defineConfig } from "astro/config";
 import react from "@astrojs/react";
 import tailwindcss from "@tailwindcss/vite";
+import { pwa } from "./src/pwa.mjs";
 
 // https://astro.build/config
 // GitHub Pages serves the repo under /<repo>/, so every generated asset URL
@@ -14,7 +15,9 @@ const onVercel = Boolean(process.env.VERCEL);
 export default defineConfig({
   site: "https://mdmostakimbillah.github.io",
   base: onVercel ? "/" : "/madcoder",
-  integrations: [react()],
+  // pwa() runs last so its build:done hook can scan the finished dist
+  // and emit an exact-precaching service worker (see src/pwa.mjs).
+  integrations: [react(), pwa()],
   vite: {
     plugins: [tailwindcss()],
     build: {

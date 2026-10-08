@@ -10,6 +10,14 @@ export const identity = {
     "Aspiring front-end developer, passionate about clean code, continuous learning, and building impactful digital experiences.",
 };
 
+/**
+ * One-sentence site description — single source for both the `<meta
+ * name="description">` tag and the PWA manifest, so the two can never
+ * drift apart.
+ */
+export const siteDescription =
+  "Portfolio of Md Mostakim Billah, an aspiring front-end developer and BSc CSE student. Selected projects, experience, and contact.";
+
 export const navItems = [
   { id: "about", index: "01", label: "About" },
   { id: "project", index: "02", label: "Projects" },
