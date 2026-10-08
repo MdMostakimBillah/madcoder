@@ -27,8 +27,10 @@ export function GET() {
     background_color: "#faf8f4",
     theme_color: "#faf8f4",
     lang: "en",
+    // All derived from img/icon.png — its own framing for the any
+    // variants, re-centred on a full-bleed white ground where a
+    // platform masks the shape (maskable, iOS touch icon).
     icons: [
-      { src: asset("favicon.svg"), sizes: "any", type: "image/svg+xml", purpose: "any" },
       { src: asset("icons/icon-192.png"), sizes: "192x192", type: "image/png", purpose: "any" },
       { src: asset("icons/icon-512.png"), sizes: "512x512", type: "image/png", purpose: "any" },
       {
