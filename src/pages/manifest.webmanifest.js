@@ -14,7 +14,10 @@ const base = import.meta.env.BASE_URL.replace(/\/+$/, "");
 export function GET() {
   const manifest = {
     id: `${base}/`,
-    name: "Md Mostakim Billah — Front-end Developer",
+    // The installed app's name — launcher label and window chrome.
+    // The role suffix stays in <title> for browser tabs; the panel
+    // above an installed window must show the name alone.
+    name: "Md Mostakim Billah",
     short_name: "Mostakim",
     description: siteDescription,
     start_url: `${base}/`,

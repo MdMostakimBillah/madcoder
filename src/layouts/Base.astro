@@ -7,6 +7,22 @@ const title = `${identity.fullName} — Front-end Developer`;
 const description = siteDescription;
 const ogImage = "https://mdmostakimbillah.github.io/madcoder/img/mostakim.webp";
 
+// Inside the installed app — standalone, minimal-ui or the Windows
+// controls overlay, plus iOS Safari's navigator.standalone, which
+// predates display-mode — the window chrome shows only the name: the
+// role suffix reads fine in a browser tab but is noise in a title
+// bar. Display mode cannot change during a document's life, so one
+// check at parse time covers it, and running inline before load means
+// the title bar never paints the suffix at all.
+const installedTitle = `(function () {
+  var installed =
+    window.matchMedia("(display-mode: standalone)").matches ||
+    window.matchMedia("(display-mode: minimal-ui)").matches ||
+    window.matchMedia("(display-mode: window-controls-overlay)").matches ||
+    navigator.standalone === true;
+  if (installed) document.title = ${JSON.stringify(identity.fullName)};
+})();`;
+
 // @font-face with base-aware URLs — plain CSS can't prefix `base`, and the
 // dev server doesn't rewrite root-relative public paths the way the build
 // does, so this is emitted here instead of in global.css.
@@ -161,6 +177,9 @@ const jsonLd = {
     />
 
     <script type="application/ld+json" set:html={JSON.stringify(jsonLd)} />
+
+    <!-- Installed PWA: name only in the window title bar. -->
+    <script is:inline set:html={installedTitle}></script>
 
     <!-- Static builds freeze the year at build time; refresh it on every visit. -->
     <script is:inline>
