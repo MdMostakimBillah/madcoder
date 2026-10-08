@@ -47,17 +47,21 @@
 @layer base {
   html {
     scroll-behavior: smooth;
-    /* No scroll snapping. Sections are each at least a viewport tall, and
-       `scroll-snap-type: y mandatory` used to sit here so exactly one of
-       them owned the screen — but a snap resists the gesture leaving it.
-       Measured on a 1000px wheel sweep: the page climbed to 171px, was
-       pulled back to 0 (23 backward frames, 0% of the input kept), and
-       then lurched a whole section when it finally let go. That is the
-       "instant jump, no smoothness" feeling. Scrolling is native and
-       continuous now — every pixel of input, in order, one frame at a
-       time — while arriving *at* a section is still animated, because
-       that is hash navigation and the `scroll-behavior` above is what
-       animates it. */
+    /* Sections are each at least a viewport tall, and the movement between
+       them is paged, not scrubbed. `scroll-snap-type: y mandatory` used to
+       sit here so exactly one of them owned the screen — but a snap
+       resists the gesture leaving it: on a 1000px wheel sweep the page
+       climbed to 171px, was pulled back to 0 (23 backward frames, 0% of
+       the input kept), then lurched a whole section when it finally let
+       go. Free scroll, the fix for that, became the "normal webpage"
+       feel — you can rest in the whitespace between a short section and
+       the next, with no movement to arrive on. Motion.jsx attaches a
+       pager instead: a wheel flick, a swipe or a scroll key glides to
+       the next section's stop in 0.7s, so at rest a section always owns
+       the screen and the movement itself is the transition (reduced
+       motion never gets it — scrolling stays native). The
+       `scroll-behavior` above stays for hash anchors; the pager forces
+       it to `auto` while it drives, then hands it back on landing. */
     -webkit-text-size-adjust: 100%;
     color-scheme: light;
     /* No painted scrollbar: wheel, touch, trackpad, keys and drag all

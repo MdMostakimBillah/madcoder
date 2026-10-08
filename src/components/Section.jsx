@@ -6,9 +6,11 @@
  * inside one — but nothing pins them. They used to be aligned to snap
  * points (this class plus `scroll-snap-type` on `html`), and the snap
  * fought the gesture trying to leave: a 1000px wheel sweep was dragged
- * back to zero and then jumped a whole section at once. Native scrolling
- * keeps every pixel of input, in order (see the html rule in global.css
- * for the numbers). Mentioning the old utility by name is what keeps
+ * back to zero and then jumped a whole section at once. Plain free scroll
+ * was no answer either — it lets a rest land in the whitespace between
+ * two sections. Movement is paged now: Motion.jsx glides wheel, touch
+ * and key input from stop to stop, and the html rule in global.css keeps
+ * the old numbers. Mentioning the old utility by name is what keeps
  * Tailwind emitting it, so the comment spells it out the long way.
  *
  * `lg:justify-center` centres header + content as a block on big screens

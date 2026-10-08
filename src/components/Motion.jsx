@@ -1,9 +1,11 @@
 import { useEffect } from "react";
 import gsap from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
+import { ScrollToPlugin } from "gsap/ScrollToPlugin";
 
 /**
- * Motion layer — GSAP owns scroll reveals and the hover micro-interactions.
+ * Motion layer — GSAP owns scroll reveals, the section-to-section glide,
+ * and the hover micro-interactions.
  *
  * ── Why there is a head script ────────────────────────────────────────────
  * "Hide, then animate" only reads as intentional if the hiding happens
@@ -18,7 +20,8 @@ import { ScrollTrigger } from "gsap/ScrollTrigger";
  *
  * Boot sequence, in order:
  *   1. stand down the head script's failsafe
- *   2. register gsap + ScrollTrigger (bundled — no second fetch)
+ *   2. register gsap + ScrollTrigger + ScrollToPlugin (bundled — no
+ *      second fetch)
  *   3. write the same hidden state as inline styles
  *   4. create the ScrollTriggers and run the one-time refresh
  *   5. drop `html.motion` — last: the inline styles now hold the elements
@@ -26,6 +29,10 @@ import { ScrollTrigger } from "gsap/ScrollTrigger";
  *      refresh's reflow (setup's one long task) lands behind the gate
  *      instead of inside the entrance, where it used to stall the first
  *      frames for a sixth of a second while the nav items arrived.
+ *   6. attach the section pager — a wheel flick, a swipe or a scroll key
+ *      glides to the next section's stop (see the paging block below).
+ *      Attached after boot on purpose: a failed setup falls back to
+ *      plain native scrolling, and the entrance never races a glide.
  *
  * Step 5 has to follow step 3: the other way round un-hides every element
  * whose trigger hasn't fired yet. Elements GSAP skips (anything hidden at
@@ -149,6 +156,315 @@ const laidOut = (gsap, sel) =>
 const prefersReduced = () =>
   window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
+/* ── Section paging ─────────────────────────────────────────────────────────
+ *
+ * The page is a sequence of sections, not a canvas. A wheel flick, a
+ * finger swipe or a scroll key is read as a *command* — "take me to the
+ * next stop" — and the journey there is one eased glide (0.7s,
+ * power2.inOut). At rest a section always owns the screen, so you never
+ * park in the whitespace between two of them, and the movement itself is
+ * the transition. The alternative options were both measured and both
+ * rejected: `scroll-snap-type: y mandatory` fought the gesture leaving a
+ * section (full numbers in the html rule in global.css — dragged back to
+ * zero, then a whole-section lurch), and plain free scroll is the
+ * "normal webpage" feel with nothing to arrive at.
+ *
+ * ── Stops ─────────────────────────────────────────────────────────────────
+ * A stop is a rest position: each section's top minus its
+ * `scroll-margin-top` — the same subtraction hash navigation makes, so a
+ * glide and a nav click land on the identical pixel (96px of clearance
+ * under the fixed pills on phones, 0 on desktop). A section taller than
+ * one screen (experience) also contributes a second, bottom-aligned stop
+ * so its tail is read before moving on and nothing gets skipped. Home
+ * and End jump to the ends of the list; the document end closes it.
+ *
+ * ── Contracts ─────────────────────────────────────────────────────────────
+ * - Reduced motion never reaches here: the effect returns before boot,
+ *   so the pager never attaches and scrolling stays native — design
+ *   identical.
+ * - A glide in flight swallows the next gesture (the lock), and a short
+ *   cooldown after landing swallows the tail of a trackpad's momentum —
+ *   one flick is exactly one glide. Wheel deltas are normalised
+ *   (line/page modes scale by 16 / viewport height) and accumulated to
+ *   an 80px threshold: a single mouse notch passes, a stray tick doesn't.
+ * - Hash anchors stay native (`scroll-behavior: smooth` on html): a
+ *   click on an in-page link kills the glide at capture time, before
+ *   the browser navigates, so the fragment scroll starts smooth with no
+ *   GSAP frame left to drag it back (hashchange is kept as a backstop
+ *   for non-click hash writes). While GSAP drives, `scroll-behavior` is
+ *   forced to `auto` — otherwise every per-frame write would start its
+ *   own CSS smooth scroll — and the stylesheet's value is handed back
+ *   untouched on landing.
+ * - PreviewOverlay freezes `body.overflow`, which already stops the
+ *   document scroll; the handlers step aside rather than fight it.
+ * -------------------------------------------------------------------- */
+
+/* One flick → one glide. */
+const WHEEL_PX = 80;
+const SWIPE_PX = 55;
+
+/* The glide. Fixed duration keeps a short hop and a long haul feeling
+   like the same gesture; inOut leaves and arrives softly. */
+const PAGE_TIME = 0.7;
+const PAGE_EASE = "power2.inOut";
+
+/** Every rest position in document order, in px from the top. */
+const pagingStops = () => {
+  const vh = window.innerHeight;
+  const maxScroll = Math.max(0, document.documentElement.scrollHeight - vh);
+  const stops = [];
+  document.querySelectorAll("main section, footer").forEach((el) => {
+    const r = el.getBoundingClientRect();
+    const margin = parseFloat(getComputedStyle(el).scrollMarginTop) || 0;
+    const top = r.top + window.scrollY - margin;
+    const bottom = r.bottom + window.scrollY;
+    // Clamped to the last scrollable pixel: a short footer's top sits
+    // *below* it, and an unreachable stop would animate, get clamped by
+    // the browser and land nowhere — leaving every flick at the end to
+    // repeat a glide that goes nowhere.
+    stops.push(Math.min(maxScroll, Math.max(0, Math.round(top))));
+    // A tail stop only when the section genuinely overflows the screen.
+    // The top stop sits `scroll-margin` above the section (the pills'
+    // clearance), so an exactly-one-screen section's "tail" would be
+    // exactly that clearance below it — a 96px hop on mobile that reads
+    // as a flick that did nothing. `max(8, margin)` makes the rule
+    // "taller than one screen, plus a hair" at every breakpoint, and the
+    // tail stop itself stays bottom-aligned (no margin: at rest, the
+    // section's end sits at the viewport's end).
+    if (bottom - vh > top + Math.max(8, margin)) {
+      // Interior stops a screenful apart, so the *middle* of a tall
+      // section is readable at rest. Experience is 2.9 screens on a
+      // phone: with a top stop and a tail stop only, its middle entries
+      // would be legible for exactly the 0.7s the glide takes to cross
+      // them and never again — unreachable at rest by flick, swipe or
+      // key alike. Each stop tiles up from the top stop (pill clearance
+      // included), so consecutive rests never leave a screenful unseen;
+      // one landing within 60px of the tail is dropped rather than kept
+      // as a hop too small to read as movement, and the tail's view
+      // still overlaps it, so at most those 60px are ever seen only
+      // mid-glide.
+      for (let y = top + vh; y < bottom - vh - 60; y += vh)
+        stops.push(Math.min(maxScroll, Math.max(0, Math.round(y))));
+      stops.push(Math.min(maxScroll, Math.round(bottom - vh)));
+    }
+  });
+  stops.push(maxScroll);
+  return stops
+    .sort((a, b) => a - b)
+    .filter((y, i, all) => i === 0 || y - all[i - 1] > 8);
+};
+
+/** Attach wheel/touch/key paging; returns the detach function. */
+const attachPaging = (gsap) => {
+  let animating = false;
+  let coolUntil = 0;
+  let savedBehavior = null;
+  let wheelAcc = 0;
+  let tracking = false;
+  let claimed = false;
+  let startY = 0;
+  let startX = 0;
+  let swipeAcc = 0;
+
+  const frozen = () => document.body.style.overflow === "hidden";
+
+  // Back to input mode: release the lock, arm the momentum cooldown,
+  // hand `scroll-behavior` back to the stylesheet exactly as it was.
+  const land = () => {
+    animating = false;
+    coolUntil = performance.now() + 320;
+    if (savedBehavior !== null) {
+      document.documentElement.style.scrollBehavior = savedBehavior;
+      savedBehavior = null;
+    }
+  };
+
+  const glide = (y) => {
+    if (animating || performance.now() < coolUntil) return;
+    if (!Number.isFinite(y) || Math.abs(y - window.scrollY) < 1.5) return;
+    animating = true;
+    savedBehavior = document.documentElement.style.scrollBehavior;
+    document.documentElement.style.scrollBehavior = "auto";
+    gsap.to(window, {
+      scrollTo: { y, autoKill: false },
+      duration: PAGE_TIME,
+      ease: PAGE_EASE,
+      onComplete: land,
+    });
+  };
+
+  // dir 1 = down/forward. The target is the next stop strictly past
+  // where we are (or strictly behind, going up), which reads correctly
+  // both from a resting stop and from a mid-flight position; at the ends
+  // there is nothing to find and the gesture simply does nothing.
+  const step = (dir) => {
+    const stops = pagingStops();
+    const y = window.scrollY;
+    const target =
+      dir > 0
+        ? stops.find((s) => s > y + 2)
+        : stops
+            .slice()
+            .reverse()
+            .find((s) => s < y - 2);
+    if (target !== undefined) glide(target);
+  };
+
+  const onWheel = (e) => {
+    if (e.ctrlKey || frozen()) return; // pinch zoom; overlay owns the page
+    const dy =
+      e.deltaMode === 1
+        ? e.deltaY * 16
+        : e.deltaMode === 2
+          ? e.deltaY * window.innerHeight
+          : e.deltaY;
+    if (Math.abs(e.deltaX) > Math.abs(dy)) return; // horizontal intent
+    if (animating) {
+      e.preventDefault(); // the glide owns the scroll — don't double-drive
+      wheelAcc = 0;
+      return;
+    }
+    // Input is a command, not a canvas: no free scrub between stops.
+    e.preventDefault();
+    if (performance.now() < coolUntil) {
+      wheelAcc = 0;
+      return;
+    }
+    // A reversal restarts the count instead of cancelling out.
+    wheelAcc = wheelAcc * dy > 0 ? wheelAcc + dy : dy;
+    if (Math.abs(wheelAcc) >= WHEEL_PX) {
+      wheelAcc = 0;
+      step(dy > 0 ? 1 : -1);
+    }
+  };
+
+  const onTouchStart = (e) => {
+    if (e.touches.length !== 1) {
+      tracking = false;
+      return;
+    }
+    tracking = true;
+    claimed = false;
+    startY = e.touches[0].clientY;
+    startX = e.touches[0].clientX;
+    swipeAcc = 0;
+  };
+
+  const onTouchMove = (e) => {
+    if (!tracking || e.touches.length !== 1 || frozen()) return;
+    if (animating) {
+      e.preventDefault(); // the finger must not drag against the glide
+      return;
+    }
+    const dy = startY - e.touches[0].clientY; // finger up = positive = down
+    const dx = startX - e.touches[0].clientX;
+    // Once a gesture is clearly vertical it stays ours to the end —
+    // releasing mid-way would otherwise leave the native scroll we
+    // already blocked half-applied alongside the glide we're about to
+    // start.
+    if (claimed || (Math.abs(dy) > 10 && Math.abs(dy) > Math.abs(dx) * 1.5)) {
+      claimed = true;
+      swipeAcc = dy;
+      e.preventDefault();
+    }
+  };
+
+  const onTouchEnd = () => {
+    if (tracking && claimed && Math.abs(swipeAcc) >= SWIPE_PX)
+      step(swipeAcc > 0 ? 1 : -1);
+    tracking = false;
+    claimed = false;
+    swipeAcc = 0;
+  };
+
+  const onKey = (e) => {
+    if (e.ctrlKey || e.metaKey || e.altKey || frozen()) return;
+    const ae = document.activeElement;
+    const tag = ae ? ae.tagName : "";
+    if (
+      tag === "INPUT" ||
+      tag === "TEXTAREA" ||
+      tag === "SELECT" ||
+      (ae && ae.isContentEditable)
+    )
+      return;
+    // Space/Enter on a link or button still means "activate" — that key
+    // belongs to the browser. Arrows on a focused control are free.
+    if (
+      (tag === "A" || tag === "BUTTON") &&
+      (e.key === " " || e.key === "Enter")
+    )
+      return;
+    const stops = pagingStops();
+    if (e.key === "Home") {
+      e.preventDefault();
+      glide(stops[0]);
+      return;
+    }
+    if (e.key === "End") {
+      e.preventDefault();
+      glide(stops[stops.length - 1]);
+      return;
+    }
+    const dir =
+      e.key === "ArrowDown" || e.key === "PageDown" || e.key === " "
+        ? 1
+        : e.key === "ArrowUp" || e.key === "PageUp"
+          ? -1
+          : 0;
+    if (!dir) return;
+    e.preventDefault();
+    step(dir);
+  };
+
+  // A nav click navigates the hash *before* `hashchange` fires — which
+  // is too late twice over: the fragment scroll would run against the
+  // glide's inline `scroll-behavior: auto` (an instant jump instead of
+  // the usual smooth one), and one more GSAP frame was still due, which
+  // measured as the page being dragged off its own landing (4545 → 341
+  // in a single frame). So the kill happens at capture time, before the
+  // browser navigates: tween gone, `scroll-behavior` back to smooth,
+  // and the fragment navigation owns the movement end to end.
+  const onDocClick = (e) => {
+    if (!animating) return;
+    if (!e.target?.closest?.('a[href^="#"]')) return;
+    gsap.killTweensOf(window);
+    land();
+  };
+
+  // Backstop for hash changes that aren't clicks (a script setting
+  // location.hash): still kill, so two scroll writers never coexist.
+  const onHashChange = () => {
+    if (animating) {
+      gsap.killTweensOf(window);
+      land();
+    }
+    wheelAcc = 0;
+  };
+
+  window.addEventListener("wheel", onWheel, { passive: false });
+  window.addEventListener("touchstart", onTouchStart, { passive: true });
+  window.addEventListener("touchmove", onTouchMove, { passive: false });
+  window.addEventListener("touchend", onTouchEnd);
+  window.addEventListener("keydown", onKey);
+  document.addEventListener("click", onDocClick, true);
+  window.addEventListener("hashchange", onHashChange);
+
+  return () => {
+    window.removeEventListener("wheel", onWheel);
+    window.removeEventListener("touchstart", onTouchStart);
+    window.removeEventListener("touchmove", onTouchMove);
+    window.removeEventListener("touchend", onTouchEnd);
+    window.removeEventListener("keydown", onKey);
+    document.removeEventListener("click", onDocClick, true);
+    window.removeEventListener("hashchange", onHashChange);
+    if (animating) {
+      gsap.killTweensOf(window);
+      land();
+    }
+  };
+};
+
 export default function Motion() {
   useEffect(() => {
     if (prefersReduced()) return undefined;
@@ -156,6 +472,7 @@ export default function Motion() {
     let ctx = null;
     let mm = null;
     let booted = false;
+    let detachPaging = null;
 
     // (1) We're alive — the head failsafe can stand down.
     clearTimeout(window.__motionFail);
@@ -165,7 +482,7 @@ export default function Motion() {
     // and fetched in the first wave, there is no post-hydration import
     // round trip gating the entrance anymore.
     (() => {
-      gsap.registerPlugin(ScrollTrigger);
+      gsap.registerPlugin(ScrollTrigger, ScrollToPlugin);
       // The page scrolls the window now — the default scroller, so no
       // ScrollTrigger.defaults() override is needed.
       //
@@ -313,6 +630,10 @@ export default function Motion() {
         // entrance frame instead of stuttering into it.
         document.documentElement.classList.remove("motion");
         booted = true;
+
+        // (6) section paging — after the entrance hands over, so a glide
+        //     and the reveal choreography never start together.
+        detachPaging = attachPaging(gsap);
       } catch (err) {
         console.warn("[motion] setup failed, page left static", err);
         ctx?.revert();
@@ -321,6 +642,7 @@ export default function Motion() {
     })();
 
     return () => {
+      detachPaging?.();
       // Never got as far as step 5? Make sure nothing stays hidden.
       if (!booted) document.documentElement.classList.remove("motion");
       mm?.revert();
