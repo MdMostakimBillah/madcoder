@@ -8,15 +8,15 @@ import { ArrowUpRight } from "./Icons.jsx";
  *
  * The face carries the number, the name and the way out — and looks the
  * way it always did. Overview, features, technology and use case ship
- * in a sheet below it: hovering expands the card sideways (the
+ * in a sheet under it: hovering expands the card sideways (the
  * flex-grow accordion — its neighbours give up their width) and the
  * sheet rides up inside the room that opens, over a frosted ground —
  * a thin paper veil on a real backdrop blur, so the amber sweep behind
  * blooms instead of printing through the rows. Where there is no hover
- * — touch, or a viewport too narrow to expand — the sheet sits in the
- * flow as a tinted panel with an amber tick on every label, and keeps
- * the `lede` the expanded card has no height for. Content is never
- * hidden behind an input you don't have.
+ * or no room — touch, or a viewport under the gate — the sheet is not
+ * painted at all: the tile keeps its face only, two tiles to a line
+ * (global.css, .project-grid). The detail is a desktop enhancement,
+ * so the card has to work without it: number, name, link.
  *
  * An anchor, not a button: with JavaScript off it simply takes you to
  * the live project. With JS on, the click is intercepted and the
@@ -77,10 +77,11 @@ export default function ProjectCard({ project, onOpen }) {
       </span>
 
       {/* Overview / features / technology / use case — the accordion
-          sheet. Plain label + value children: stacked like a definition
-          list in the flow (touch, small screens — the lede lives here),
-          inline-labelled one row per group in the expanded card, where
-          the lede is dropped for height (global.css). */}
+          sheet. Plain label + value children, one row per group in the
+          expanded card, with the lede dropped for height. The block is
+          display-gated: small screens and touch never paint it at all
+          (global.css, .project-details), which is why the card still
+          has to read on its face alone. */}
       <span className="project-details">
         {project.lede && (
           <span className="project-details__group project-details__lede">

@@ -15,10 +15,12 @@
  * narrowest (768px, where it owns ~60% of a 536px row): the ribbon may
  * take up to three wrap lines there, the other groups one.
  *
- * `lede` is optional and belongs to the stacked sheet only — the
- * in-flow panel touch and small screens get. The expanded desktop card
- * has no height for it (rows are capped by the row height), so CSS
- * drops it exactly there; everywhere without hover it shows in full.
+ * `lede` is optional. The expanded card has no height for it (rows are
+ * capped by the sheet), and the detail block now renders in that mode
+ * *only* — small screens and touch show the card's face, two to a line —
+ * so the overview rides along in the markup and displays nowhere yet.
+ * Either drop the field or give the expanded sheet room for it when the
+ * layout next moves.
  */
 export const projects = [
   {

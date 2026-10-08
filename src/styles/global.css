@@ -706,12 +706,17 @@
  * Project cards — the accordion sheet
  *
  * The cards stay the compact tiles they always were; features,
- * technology and use case ship in every card's markup but not in its
- * resting face. Two shapes, chosen by capability:
+ * technology and use case ship in every card's markup but never in its
+ * resting face. Two modes, chosen by capability:
  *
- *   no hover (touch), or    the sheet sits in the flow under the face
- *   narrow (<768px)         with a hairline over it — nothing is
- *                           hidden behind an input you don't have;
+ *   everything else         two tiles per line — a phone has no width
+ *                           for three, and one card a line wastes the
+ *                           screen — and no sheet at all: without a
+ *                           pointer there is nothing to open it, and a
+ *                           detail panel under every tile doubles the
+ *                           scroll for copy nobody asked for. The
+ *                           details stay in the markup for the mode
+ *                           that can show them;
  *   hover + room (≥768px)   pointing at a card hands it ~62% of the
  *                           row (neighbours drop to ~19% each) and
  *                           rides the sheet up inside the room that
@@ -734,46 +739,50 @@
  * wrap and unwrap while visible — and the groups trail in behind it.
  * The exit is unstaggered: everything drops together.
  *
- * Ground — two shapes again. In the flow (touch, or any viewport under
- * 768): a tinted panel with a hairline over it and a small amber tick
- * on every label, holding the optional `lede` the expanded card has no
- * height for. Expanded: a thin paper veil over a real backdrop blur —
+ * Ground. Expanded: a thin paper veil over a real backdrop blur —
  * the face has already faded, so the frost only ever smears amber and
  * paper, and the sweep blooms through the rows instead of printing
  * behind them.
  * ------------------------------------------------------------------ */
-.project-details {
-  display: grid;
-  gap: 0.625rem;
-  margin-top: 1rem;
-  padding: 0.75rem;
-  border-top: 1px solid var(--color-rule);
-  background: color-mix(in oklab, var(--color-paper-raised) 72%, transparent);
+
+/* Two per line: half the row each, so a pair fills it and the odd
+   card out stretches to hold its own line rather than leaving bare
+   page beside it (three projects → two + one). The gate below
+   rewrites this to equal shares of a single line. */
+.project-grid > .project-card {
+  flex: 1 1 50%;
 }
 
-/* Base sheet (stacked): a definition list — label over value, each
-   group marked with a 2px amber tick against the panel. The block
-   font (13/1.5) sets the line strut: labels and values then share
-   one rhythm instead of the 16px page strut inflating every wrapped
-   line by five pixels. */
+/* The sheet exists only where the accordion can open it — the media
+   query below is the one place `display` comes back, and it supplies
+   every other property this element uses. Everywhere else it is not
+   painted at all: the card shows its face, two to a line. */
+.project-details {
+  display: none;
+}
+
+/* The block font (13/1.5) sets the line strut for every group: labels
+   and values share one rhythm instead of the 16px page strut
+   inflating each wrapped line by five pixels. The stacked shape this
+   rule used to draw — label over value, amber tick against a tinted
+   panel — belonged to the in-flow sheet, which no longer renders;
+   only the expanded sheet can show the groups now, and it lays them
+   out itself in the gate below. */
 .project-details__group {
-  display: grid;
-  gap: 0.25rem 0.75rem;
   font-size: 0.8125rem;
   line-height: 1.5;
-  padding-left: 0.625rem;
-  border-left: 2px solid color-mix(in oklab, var(--color-amber) 75%, transparent);
 }
 
 @media (hover: hover) and (min-width: 768px) {
-  /* This mode owns the row as well: stacked everywhere without hover
-     (a stacked sheet is tall, and three tall columns side by side is
-     not a layout), a flex row exactly where the accordion can run.
+  /* This mode owns the row as well: two tiles per line everywhere
+     else, a single flex row exactly where the accordion can run —
+     and no wrapping there, since basis-0 shares always fit.
      `flex: 1 1 0` reproduces the old equal thirds; min-height is the
      expanded sheet's budget — three wrap lines of feature copy plus
      the chip row and a use case, with breathing room under the last. */
   .project-grid {
     flex-direction: row;
+    flex-wrap: nowrap;
   }
 
   .project-grid > .project-card {
@@ -782,7 +791,7 @@
   }
 
   /* ── The accordion ───────────────────────────────────────────────
-     Equal thirds at rest (`flex: 1 1 0`, sm:flex-1 on the card).
+     Equal thirds at rest (`flex: 1 1 0`, the rule above).
      When any card takes focus (hover or keyboard), the row gives up
      its shares; the focused card takes its own back. Specificity:
      shrink outranks the base flex, focused outranks shrink. */
@@ -797,12 +806,14 @@
   }
 
   /* ── The sheet ──────────────────────────────────────────────────
-     Parked a card-height below (clipped by the tile's overflow),
-     riding up once the room has opened. The face steps aside under
-     it: the name would otherwise bleed through the frost and collide
-     with the labels — and the sheet covers the face's half of the
-     card anyway. The id row stays: it lives above the sheet and
-     keeps the card numbered while expanded. */
+     `display` is the gate's gift: outside this media query the rule
+     above keeps the sheet out of the layout entirely. Parked a
+     card-height below (clipped by the tile's overflow), riding up
+     once the room has opened. The face steps aside under it: the name
+     would otherwise bleed through the frost and collide with the
+     labels — and the sheet covers the face's half of the card
+     anyway. The id row stays: it lives above the sheet and keeps the
+     card numbered while expanded. */
   .project-face {
     transition: opacity 0.3s var(--ease-editorial);
   }
@@ -812,6 +823,7 @@
   }
 
   .project-details {
+    display: grid;
     position: absolute;
     z-index: 20; /* above the face (z-10): the sheet covers it, not vice versa */
     top: 2.5rem;
@@ -820,7 +832,8 @@
     left: 0;
     margin: 0;
     padding: 0.75rem;
-    gap: 0.5rem; /* the stacked panel breathes at 0.625; this row has a height cap */
+    gap: 0.5rem; /* tight: this sheet answers to a height cap */
+    border-top: 1px solid var(--color-rule); /* the hairline under the id row */
     background: color-mix(in oklab, var(--color-paper-raised) 64%, transparent);
     -webkit-backdrop-filter: blur(12px);
     backdrop-filter: blur(12px);
@@ -848,8 +861,10 @@
     margin-right: 0.5em;
   }
 
-  /* The stacked sheet's overview has no room under a row-height cap —
-     it belongs to the in-flow panel, dropped here and nowhere else. */
+  /* The overview has no room under a row-height cap — and this sheet
+     is the only shape the detail has left, so the `lede` ships in the
+     markup and renders nowhere: the name and the live link carry the
+     card, the three short groups carry the rest. */
   .project-details__lede {
     display: none;
   }
