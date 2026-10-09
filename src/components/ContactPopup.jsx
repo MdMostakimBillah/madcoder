@@ -17,6 +17,12 @@ import { CONTACT_ENDPOINT, identity } from "../data/site.js";
  * global.css, which is what lets the material show at *every* width —
  * the mobile gate owns the pills and taskbar, this shell owns itself.
  *
+ * It docks as a small card against the right edge (top-aligned, like a
+ * side sheet) with **no scrim**: the backdrop is invisible, so what the
+ * glass refracts is the live page itself rather than a darkened copy —
+ * and it still catches outside clicks, freezes the page and keeps the
+ * pager disarmed while the card is open.
+ *
  * While open, `body` overflow is frozen — exactly the contract
  * PreviewOverlay keeps: the page behind cannot move, and the desktop
  * pager's wheel/touch/key handlers all bail out on `frozen()`, so the
@@ -143,7 +149,7 @@ export default function ContactPopup() {
 
   return createPortal(
     <div
-      className="animate-overlay fixed inset-0 z-50 flex items-center justify-center bg-[#0f0d0a]/55 p-4 backdrop-blur-[3px] sm:p-6"
+      className="fixed inset-0 z-50 flex items-start justify-end p-4 sm:p-6"
       onMouseDown={(event) => {
         // Only a press that *starts* on the backdrop dismisses — a
         // drag out of the form never closes the dialog by accident.
@@ -160,7 +166,7 @@ export default function ContactPopup() {
       >
         <div className="flex items-start justify-between gap-4">
           <div className="min-w-0">
-            <p className="type-eyebrow text-amber">Contact</p>
+            <p className="type-eyebrow text-amber-deep">Contact</p>
             <h2
               id="contact-title"
               className="mt-1.5 text-[1.375rem] font-bold leading-tight tracking-tight text-ink"
@@ -185,8 +191,10 @@ export default function ContactPopup() {
 
         {/* Scroll only if a short viewport needs it — the glass layers
             live on the shell, so scrolling this inner wrapper leaves
-            the refraction nailed to the panel. */}
-        <div className="mt-5 max-h-[70dvh] overflow-y-auto overscroll-contain">
+            the refraction nailed to the panel. The budget (viewport minus
+            the card's own height overhead) keeps a docked card inside the
+            screen at any window height; the shell itself never scrolls. */}
+        <div className="mt-5 max-h-[calc(100dvh-14rem)] overflow-y-auto overscroll-contain">
           {status === "sent" ? (
             <div
               role="status"

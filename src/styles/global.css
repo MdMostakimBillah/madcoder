@@ -522,14 +522,16 @@
   }
 }
 
+/* The contact card docks right, so it arrives from its own edge: a short
+   horizontal slide plus fade — a drawer's entrance, not a modal's rise. */
 @keyframes dialog-in {
   from {
     opacity: 0;
-    transform: translateY(0.5rem) scale(0.97);
+    transform: translateX(1.5rem);
   }
   to {
     opacity: 1;
-    transform: translateY(0) scale(1);
+    transform: translateX(0);
   }
 }
 
