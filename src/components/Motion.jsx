@@ -93,7 +93,7 @@ const REVEALS = [
   { sel: "main h3", dur: 0.75, delay: 0.06 },
   // Three-up grid: cascade left→right inside a row so tiles don't pop as one.
   { sel: "main .grid > a", dur: 0.85, perRow: 3, rowStagger: 0.07 },
-  { sel: "main footer a", dur: 0.6 },
+  { sel: "main footer a, main footer button", dur: 0.6 },
 ];
 
 /**

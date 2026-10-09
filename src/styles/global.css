@@ -378,7 +378,8 @@
       main p,
       main h3,
       main .grid > a,
-      main footer a
+      main footer a,
+      main footer button
     ) {
     opacity: 0;
     transform: translateY(0.75rem);
@@ -521,12 +522,27 @@
   }
 }
 
+@keyframes dialog-in {
+  from {
+    opacity: 0;
+    transform: translateY(0.5rem) scale(0.97);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
 @utility animate-overlay {
   animation: overlay-in 0.22s var(--ease-editorial) both;
 }
 
 @utility animate-sheet {
   animation: sheet-in 0.32s var(--ease-editorial) both;
+}
+
+@utility animate-dialog {
+  animation: dialog-in 0.28s var(--ease-editorial) both;
 }
 
 /* Respect users who ask for less motion — kills the glow and all easing. */
@@ -1115,6 +1131,54 @@
      (h-11 w-11 rounded-full) that the travelling pill measures and
      covers exactly. Nothing about the taskbar changes across the gate
      above — only the surface appears. */
+}
+
+/* ------------------------------------------------------------------ *
+ * Contact dialog glass — the same material, at every width.
+ *
+ * The gate above can't be OR'd with a selector: a media condition and a
+ * `.class` never share one rule, so the shells it owns stay phone-only
+ * exactly as promised. The dialog is the one shell meant to show its
+ * glass on phones *and* desktop (ContactPopup.jsx), so it restates the
+ * material for itself — declaration for declaration, same three boxes,
+ * same #lg-dist capture; it is the dimmed page behind it that bends.
+ * Specificity does the rest: `.glass-dialog .glass-refract` outranks
+ * the base `display: none` at any viewport, and inside the mobile gate
+ * both paths land on identical values, so nothing double-applies.
+ * ------------------------------------------------------------------ */
+.glass-dialog {
+  position: relative;
+  z-index: 0;
+  overflow: hidden; /* clips the refract layer's 60px overscan */
+  border: none;
+  background: none;
+  box-shadow: var(--glass-ambient);
+}
+
+.glass-dialog .glass-refract,
+.glass-dialog .glass-surface {
+  position: absolute;
+  pointer-events: none;
+  border-radius: inherit;
+}
+
+.glass-dialog .glass-refract {
+  display: block;
+  inset: -60px;
+  z-index: -2;
+  backdrop-filter: var(--glass-capture);
+  filter: url(#lg-dist);
+}
+
+.glass-dialog .glass-surface {
+  display: block;
+  inset: 0;
+  z-index: -1;
+  background: var(--glass-tint);
+  border: 1px solid var(--glass-border);
+  box-shadow:
+    inset 1px 1px 0 0 var(--glass-highlight),
+    inset 0 0 5px 0 var(--glass-highlight);
 }
 
 /* ------------------------------------------------------------------ *

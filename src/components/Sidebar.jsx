@@ -8,6 +8,7 @@ import {
   CapIcon,
   DownloadIcon,
   LayersIcon,
+  MessageIcon,
   UserIcon,
   socialIcons,
 } from "./Icons.jsx";
@@ -327,6 +328,24 @@ export default function Sidebar() {
                 </li>
               );
             })}
+
+            {/* The row's one non-link: it opens the contact dialog. No
+                handler here — ContactPopup listens for `data-open-contact`
+                on document, which is also how the footer's static copy of
+                this button works without becoming a hydrated island.
+                Amber on hover, alongside the CV: both are "reach me" acts. */}
+            <li>
+              <button
+                type="button"
+                data-open-contact=""
+                data-iconbtn="amber"
+                aria-label="Send me a message"
+                title="Send me a message"
+                className="icon-lift flex h-9 w-9 items-center justify-center text-ink-soft transition-colors duration-200 hover:bg-amber hover:text-amber-ink"
+              >
+                <MessageIcon />
+              </button>
+            </li>
           </ul>
 
           <span aria-hidden="true" className="h-5 w-px bg-rule" />

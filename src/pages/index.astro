@@ -1,6 +1,7 @@
 ---
 import Base from "../layouts/Base.astro";
 import AboutSection from "../components/AboutSection.jsx";
+import ContactPopup from "../components/ContactPopup.jsx";
 import EducationSection from "../components/EducationSection.jsx";
 import ExperienceSection from "../components/ExperienceSection.jsx";
 import Footer from "../components/Footer.jsx";
@@ -33,6 +34,12 @@ import SkillsSection from "../components/SkillsSection.jsx";
          column hides below `lg`, where the tab bar carries navigation and
          the gutter it lived in doesn't exist. -->
     <ScrollDots client:load />
+
+    <!-- Contact dialog: closed it renders nothing, so it costs no
+         layout. Mounted early so its document-level listener answers
+         the rail and footer message icons the moment the page is
+         interactive. -->
+    <ContactPopup client:load />
 
     <!--
       Normal document scroll: the page itself scrolls (no inner viewport),

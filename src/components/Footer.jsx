@@ -1,4 +1,4 @@
-import { socialIcons } from "./Icons.jsx";
+import { MessageIcon, socialIcons } from "./Icons.jsx";
 import { identity, socials } from "../data/site.js";
 
 /**
@@ -35,6 +35,22 @@ export default function Footer() {
             </li>
           );
         })}
+
+        {/* Phone/tablet twin of the rail's message icon. This footer
+            stays static HTML — ContactPopup's document-level listener
+            answers `data-open-contact`, so the popup works here without
+            hydrating a single extra island. */}
+        <li>
+          <button
+            type="button"
+            data-open-contact=""
+            aria-label="Send me a message"
+            title="Send me a message"
+            className="icon-lift flex h-9 w-9 items-center justify-center text-ink-soft transition-colors duration-200 hover:bg-amber hover:text-amber-ink"
+          >
+            <MessageIcon />
+          </button>
+        </li>
       </ul>
 
       <a
