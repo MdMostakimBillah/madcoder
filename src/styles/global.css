@@ -56,10 +56,12 @@
        go. Free scroll, the fix for that, became the "normal webpage"
        feel — you can rest in the whitespace between a short section and
        the next, with no movement to arrive on. Motion.jsx attaches a
-       pager instead: a wheel flick, a swipe or a scroll key glides to
-       the next section's stop in 0.7s, so at rest a section always owns
-       the screen and the movement itself is the transition (reduced
-       motion never gets it — scrolling stays native). The
+       pager instead, on the desktop layout (`lg` and up): a wheel flick,
+       a swipe or a scroll key glides to the next section's stop in 0.7s,
+       so at rest a section always owns the screen and the movement
+       itself is the transition. Below `lg` — phones and tablets — and
+       under reduced motion, none of it attaches: scrolling stays
+       native, continuous, the way a thumb expects it. The
        `scroll-behavior` above stays for hash anchors; the pager forces
        it to `auto` while it drives, then hands it back on landing. */
     -webkit-text-size-adjust: 100%;

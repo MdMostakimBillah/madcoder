@@ -31,8 +31,10 @@ import { ScrollToPlugin } from "gsap/ScrollToPlugin";
  *      frames for a sixth of a second while the nav items arrived.
  *   6. attach the section pager — a wheel flick, a swipe or a scroll key
  *      glides to the next section's stop (see the paging block below).
- *      Attached after boot on purpose: a failed setup falls back to
- *      plain native scrolling, and the entrance never races a glide.
+ *      Desktop only: below `lg` it never attaches, so phones and tablets
+ *      keep plain native scrolling. Attached after boot on purpose: a
+ *      failed setup falls back to native too, and the entrance never
+ *      races a glide.
  *
  * Step 5 has to follow step 3: the other way round un-hides every element
  * whose trigger hasn't fired yet. Elements GSAP skips (anything hidden at
@@ -169,14 +171,27 @@ const prefersReduced = () =>
  * zero, then a whole-section lurch), and plain free scroll is the
  * "normal webpage" feel with nothing to arrive at.
  *
+ * ── Which screens ──────────────────────────────────────────────────────────
+ * Desktop only — `lg` and up, the same line the layout switches on
+ * (PAGING_MQ below). Below it the site wears its phone and tablet
+ * chrome and scrolls the way every other app on those screens does:
+ * natively, continuously, momentum and all. A thumb flicking through a
+ * list wants the movement it always gets, and a 0.7s hop between
+ * sections reads there as friction rather than as arrival — the glide
+ * is what a pointer on the desktop layout was asking for. Crossing the
+ * line by resizing or rotating attaches or detaches the pager live,
+ * and a detach kills a glide in flight on the way out.
+ *
  * ── Stops ─────────────────────────────────────────────────────────────────
  * A stop is a rest position: each section's top minus its
  * `scroll-margin-top` — the same subtraction hash navigation makes, so a
  * glide and a nav click land on the identical pixel (96px of clearance
- * under the fixed pills on phones, 0 on desktop). A section taller than
- * one screen (experience) also contributes a second, bottom-aligned stop
- * so its tail is read before moving on and nothing gets skipped. Home
- * and End jump to the ends of the list; the document end closes it.
+ * under the fixed pills, 0 where the rail takes the side). A section
+ * taller than one screen (experience — 2.9 of them on a phone) adds
+ * stops a screenful apart so its middle is readable at rest, plus a
+ * bottom-aligned tail so its end is read before moving on and nothing is
+ * skipped. Home and End jump to the ends of the list; the document end
+ * closes it.
  *
  * ── Contracts ─────────────────────────────────────────────────────────────
  * - Reduced motion never reaches here: the effect returns before boot,
@@ -195,9 +210,18 @@ const prefersReduced = () =>
  *   forced to `auto` — otherwise every per-frame write would start its
  *   own CSS smooth scroll — and the stylesheet's value is handed back
  *   untouched on landing.
+ * - Below `lg` none of this runs: `attachPaging` is called only while
+ *   PAGING_MQ matches, so phones and tablets get unmodified native
+ *   scrolling — wheel, touch and keys are never intercepted.
  * - PreviewOverlay freezes `body.overflow`, which already stops the
  *   document scroll; the handlers step aside rather than fight it.
  * -------------------------------------------------------------------- */
+
+/* Desktop-only gate, and deliberately the layout's own line: paging is
+   on exactly when the rail is. A tablet portrait (768–1023) is a small
+   screen — pills, tab bar, native scroll; the same tablet in landscape
+   (1024) already wears the desktop chrome and glides with it. */
+const PAGING_MQ = "(min-width: 1024px)";
 
 /* One flick → one glide. */
 const WHEEL_PX = 80;
@@ -473,6 +497,8 @@ export default function Motion() {
     let mm = null;
     let booted = false;
     let detachPaging = null;
+    let pagingMQ = null;
+    let onPagingMQ = null;
 
     // (1) We're alive — the head failsafe can stand down.
     clearTimeout(window.__motionFail);
@@ -632,8 +658,23 @@ export default function Motion() {
         booted = true;
 
         // (6) section paging — after the entrance hands over, so a glide
-        //     and the reveal choreography never start together.
-        detachPaging = attachPaging(gsap);
+        //     and the reveal choreography never start together. Desktop
+        //     only (PAGING_MQ): below `lg` — phones and tablets — this
+        //     never attaches and the page keeps native scrolling, which
+        //     is also what a failed setup falls back to at every width.
+        pagingMQ = window.matchMedia(PAGING_MQ);
+        onPagingMQ = () => {
+          if (pagingMQ.matches) {
+            if (!detachPaging) detachPaging = attachPaging(gsap);
+          } else if (detachPaging) {
+            // The detach kills a glide in flight and hands
+            // `scroll-behavior` back before it lets go.
+            detachPaging();
+            detachPaging = null;
+          }
+        };
+        onPagingMQ();
+        pagingMQ.addEventListener("change", onPagingMQ);
       } catch (err) {
         console.warn("[motion] setup failed, page left static", err);
         ctx?.revert();
@@ -642,6 +683,7 @@ export default function Motion() {
     })();
 
     return () => {
+      pagingMQ?.removeEventListener("change", onPagingMQ);
       detachPaging?.();
       // Never got as far as step 5? Make sure nothing stays hidden.
       if (!booted) document.documentElement.classList.remove("motion");
