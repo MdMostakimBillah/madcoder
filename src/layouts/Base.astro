@@ -81,16 +81,28 @@ const jsonLd = {
       `--rd`). It starts *with the first frame* instead of after that island
       boots — waiting for JS held the rail blank for up to a second on a
       cold load — and compositor-run keyframes can't be stuttered by the
-      boot's long task. Nothing ever removes it: the animation finishes on
-      its own and the fill it leaves equals the natural state, so the
-      failsafe below deliberately leaves it alone (dropping it mid-cascade
-      would snap everything visible).
+      boot's long task. Dropping the class mid-cascade would snap
+      everything visible, so instead each element folds its own fill away
+      the moment its entrance ends (listener below): the inline state the
+      listener writes is pixel-identical to the fill it replaces — the fill
+      equals the natural state — so nothing moves, but Chromium stops
+      treating the element as animation-backed.
+
+      Why the fold exists: a *filling* transform/opacity animation on an
+      ancestor makes Chromium evaluate an element's own `filter` (the
+      LiquidGlass water-line reflection bands inside these pills) against
+      an empty source — the bands rendered nothing while railIn held its
+      end frame, and the moment the animation was dropped they mirrored
+      correctly (measured: red/green block test, dead → mirror). The fill
+      is the last thing to go, so the cascade keeps its choreography and
+      only the resting state changes — invisibly.
 
       No JS (this never runs) or prefers-reduced-motion: neither class is
-      added and everything renders visible. The timeout is the failsafe for
-      `motion` — if the motion chunk never boots, it drops the class so
-      nothing can be left hidden behind an animation that never runs.
-      Motion.jsx stands it down the moment it takes over.
+      added, no animation ever runs, and everything renders visible. The
+      timeout is the failsafe for `motion` — if the motion chunk never
+      boots, it drops the class so nothing can be left hidden behind an
+      animation that never runs. Motion.jsx stands it down the moment it
+      takes over.
     -->
     <script is:inline>
       if (!window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
@@ -98,6 +110,13 @@ const jsonLd = {
         window.__motionFail = setTimeout(function () {
           document.documentElement.classList.remove("motion");
         }, 4000);
+        document.addEventListener("animationend", function (e) {
+          if (e.animationName !== "railIn") return;
+          var el = e.target;
+          el.style.animation = "none";
+          el.style.opacity = "1";
+          el.style.transform = "none";
+        });
       }
     </script>
 
@@ -241,7 +260,21 @@ const jsonLd = {
              space the screen composites in — linearRGB moves the page's
              luminance by a fraction either way, and sRGB is the one that
              matches the unfilitered backdrop it is standing in for. -->
-    <svg style="display: none" aria-hidden="true" focusable="false">
+    <!-- The host svg is *rendered* at zero size — NOT display:none.
+         Primitive-only filters (#lg-dist) were fine under display:none,
+         but feImage decodes its data-URI asynchronously: inside a
+         display:none host the first evaluation (image not yet decoded
+         → empty map → every sample displaced into transparency) is
+         never invalidated when the decode lands, so the #lg-reflect-*
+         water-line bands rendered nothing. Measured in Chromium — same
+         filter graph, same document: display:none parent → empty or
+         garbled output; zero-size rendered parent → correct mirror.
+         position:absolute + width/height 0 keeps it out of layout. -->
+    <svg
+      style="position: absolute; width: 0; height: 0; overflow: hidden"
+      aria-hidden="true"
+      focusable="false"
+    >
       <filter id="lg-dist" x="0%" y="0%" width="100%" height="100%" color-interpolation-filters="sRGB">
         <feTurbulence
           type="fractalNoise"
@@ -256,6 +289,93 @@ const jsonLd = {
           in="soft"
           in2="blurred"
           scale="70"
+          xChannelSelector="R"
+          yChannelSelector="G"
+        />
+      </filter>
+
+      <!-- ── #lg-reflect-b — the water line ────────────────────────────
+       The bars' glass doesn't just warp what scrolls beneath it: at the
+       edge where content meets the glass, it MIRRORS it, the way text at
+       the bank of a pond shows up flipped in the surface. Both bands use
+       ONE 104px box with the line 26px from its top: the top pills hang
+       it `bottom: -78px`, so the shell keeps the rows ABOVE the line and
+       the band reflects the page *below* the pill upward into it; the
+       taskbar hangs it `top: -26px`, so the shell keeps the rows below
+       the line and the band reflects the page *above* the bar downward
+       into it. Same box, same flip — only which side of the line
+       survives the clip differs.
+
+       A mirror from a displacement map: feDisplacementMap samples
+       source = pixel + scale·(channel − 0.5), so a map whose green ramps
+       1→0 across the first L px of the box, with scale = 2L, makes
+       row y read row 2L − y — an exact flip about the line at y = L.
+       Here the ramp runs over y 0…52 with scale 104: every row flips
+       about y = 26, the line. The map is an feImage because SVG
+       filters have no gradient primitive; the data-URI is the ramp
+       G = 1→0 over y 0…52, and R stays 128 (≈0.5) so nothing shifts
+       sideways. (A second filter with its line at y = 78 — a ramp
+       starting halfway down — was dropped after measurement: every
+       variant of it rendered as THIS top-half ramp instead, so the
+       taskbar lays its strip out to put its line at y = 26 rather
+       than trust a map Chromium's feImage never draws.)
+
+       Three additions, each bought with a measurement:
+         · feTurbulence + blur, folded in by feComposite — the water
+           wobbles instead of being a dead-flat mirror. k3 = 0.25 sets
+           the wave height (~±4px); k4 = −0.125 cancels the noise
+           channel's 0.5 mean, so the line stays exactly on the line.
+         · feColorMatrix then forces R back to 0.5 (the ripple only
+           belongs in the vertical channel) and pins alpha to 1.
+         · The frost is NOT in here: `feGaussianBlur in="SourceGraphic"`
+           alongside an feImage renders the whole filter empty in
+           Chromium (measured: raw page, zero displacement). The
+           1.3px softening lives in the CSS chain instead —
+           `filter: url(#lg-reflect-*) blur(1.3px)` — which the browser
+           applies after the SVG pass.
+
+       sRGB so the pass runs in the space the screen composites in,
+       same as #lg-dist. -->
+      <filter
+        id="lg-reflect-b"
+        x="0%"
+        y="0%"
+        width="100%"
+        height="100%"
+        color-interpolation-filters="sRGB"
+      >
+        <feImage
+          href="data:image/svg+xml;utf8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%221600%22%20height%3D%22104%22%3E%3ClinearGradient%20id%3D%22g%22%20x1%3D%220%22%20y1%3D%220%22%20x2%3D%220%22%20y2%3D%2252%22%20gradientUnits%3D%22userSpaceOnUse%22%3E%3Cstop%20offset%3D%220%22%20stop-color%3D%22rgb(128%2C255%2C0)%22%2F%3E%3Cstop%20offset%3D%221%22%20stop-color%3D%22rgb(128%2C0%2C0)%22%2F%3E%3C%2FlinearGradient%3E%3Crect%20width%3D%221600%22%20height%3D%22104%22%20fill%3D%22url(%23g)%22%2F%3E%3C%2Fsvg%3E"
+          result="map"
+        />
+        <feTurbulence
+          type="fractalNoise"
+          baseFrequency="0.03 0.03"
+          numOctaves="2"
+          seed="92"
+          result="noise"
+        />
+        <feGaussianBlur in="noise" stdDeviation="2" result="ripple" />
+        <feComposite
+          in="map"
+          in2="ripple"
+          operator="arithmetic"
+          k1="0"
+          k2="1"
+          k3="0.25"
+          k4="-0.125"
+          result="mix"
+        />
+        <feColorMatrix
+          in="mix"
+          type="matrix"
+          values="0 0 0 0 0.5  0 1 0 0 0  0 0 1 0 0  0 0 0 0 1"
+          result="mapG"
+        />
+        <feDisplacementMap
+          in="SourceGraphic"
+          in2="mapG"
+          scale="104"
           xChannelSelector="R"
           yChannelSelector="G"
         />

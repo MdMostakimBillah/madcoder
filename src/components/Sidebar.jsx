@@ -151,6 +151,7 @@ export default function Sidebar() {
              28px slot, so the pill's layout never changes. ── */}
         <LiquidGlass
           data-reveal
+          reflect="bottom"
           className="pointer-events-auto flex min-w-0 flex-1 items-center gap-2.5 rounded-full border border-white/50 bg-paper/70 py-1.5 pl-1.5 pr-4 shadow-[0_16px_40px_-16px_rgb(20_17_13/0.5)] backdrop-blur-xl backdrop-saturate-150 dark:border-white/10 lg:hidden"
         >
           <Mascot />
@@ -171,6 +172,7 @@ export default function Sidebar() {
         {/* ── mobile, right pill: CV download + theme switch ── */}
         <LiquidGlass
           data-reveal
+          reflect="bottom"
           style={{ "--rd": "0.06s" }}
           className="pointer-events-auto flex shrink-0 items-center gap-1 rounded-full border border-white/50 bg-paper/70 py-1.5 pl-2.5 pr-1.5 shadow-[0_16px_40px_-16px_rgb(20_17_13/0.5)] backdrop-blur-xl backdrop-saturate-150 dark:border-white/10 lg:hidden"
         >
@@ -371,7 +373,9 @@ export default function Sidebar() {
       {/* Mobile: floating glass tab bar — the modern-app navigation.
           `lg:hidden` keeps it out of the desktop layout, and being a
           sibling of <aside> keeps its own backdrop-filter anchored to
-          the viewport rather than to a blurred ancestor. */}
+          the viewport rather than to a blurred ancestor. The water
+          line hangs from its TOP edge (reflect="top"): the page
+          scrolls above the bar, so that is the bank the pond is. */}
       <nav
         aria-label="Sections"
         data-reveal
@@ -381,6 +385,7 @@ export default function Sidebar() {
         <LiquidGlass
           as="ul"
           ref={tabRef}
+          reflect="top"
           className="relative flex items-center gap-1 rounded-full border border-white/50 bg-paper/70 p-1.5 shadow-[0_16px_40px_-16px_rgb(20_17_13/0.5)] backdrop-blur-xl backdrop-saturate-150 dark:border-white/10"
         >
           {/* The travelling pill: the active amber background slides

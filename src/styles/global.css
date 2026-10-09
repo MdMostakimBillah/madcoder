@@ -1017,12 +1017,22 @@
 /* ------------------------------------------------------------------ *
  * Liquid glass — SMALL SCREENS ONLY (≤768px)
  *
- * Three boxes, because the capture, the surface light and the layout
- * each want to be painted separately:
+ * Four boxes, because the capture, the water line, the surface light
+ * and the layout each want to be painted separately:
  *
  *   glass-shell        layout, rounding, ambient shadow, pointer events
  *   ├ .glass-refract   z:-2 · THE material: the page behind the pill,
  *   │                    frosted and bent by #lg-dist (in Base.astro)
+ *   ├ .glass-reflect   z:-1 · the water line (opt-in per shell): a
+ *   │                    26px band at the edge where content meets the
+ *   │                    glass, mirroring what lies beyond it —
+ *   │                    #lg-reflect-b on either side of the line
+ *   │                    (bottom edge of the top pills, top edge of
+ *   │                    the taskbar — the strip's layout picks the
+ *   │                    bank, the flip is one and the same),
+ *   │                    faded out by a mask as it climbs away from
+ *   │                    the line, softened by the CSS blur() that
+ *   │                    follows the url() in its filter chain
  *   ├ .glass-surface   z:-1 · the flat part: tint, hairline, the
  *   │                    specular rim that says light is landing on it
  *   └ children             paint above the glass: full contrast, never
@@ -1075,6 +1085,7 @@
    of the media query on purpose — same specificity, so source order
    decides, and the gate must win. */
 .glass-refract,
+.glass-reflect,
 .glass-surface {
   display: none;
 }
@@ -1105,11 +1116,14 @@
     backdrop-filter: none;
   }
 
-  /* Geometry, shared by both material layers. The refract layer runs
+  /* Geometry, shared by the material layers. The refract layer runs
      60px past the box on every side (headroom for the displacement —
-     see the header); the surface stops at the silhouette, because the
-     tint and the rim have to land exactly on the edge. */
+     see the header); the reflect band runs 78px past the one edge it
+     hangs from (capture headroom for the flip — see below); the
+     surface stops at the silhouette, because the tint and the rim have
+     to land exactly on the edge. */
   .glass-refract,
+  .glass-reflect,
   .glass-surface {
     position: absolute;
     pointer-events: none;
@@ -1146,6 +1160,64 @@
     box-shadow:
       inset 1px 1px 0 0 var(--glass-highlight),
       inset 0 0 5px 0 var(--glass-highlight);
+  }
+
+  /* ── The water line ──────────────────────────────────────────────
+     The opt-in band: only shells whose markup passed
+     `reflect="bottom" | "top"` to LiquidGlass render a
+     `.glass-reflect` at all, and only the top pills and the taskbar
+     do. Everything about it is fixed geometry so ONE filter can serve
+     every bar — a 104px box that always puts the line 26px from its
+     top, of which the shell keeps the 26px nearest the line:
+
+       -b  bottom: -78px → box spans [line − 26, line + 78]; the
+           line is the pill's lower edge, the shell keeps rows
+           0…26, and the band mirrors the 26px of page *below*
+           the pill upward into it;
+       -t  top: -26px → the same box; the line is the bar's upper
+           edge, the shell keeps rows 26 downward, and the band
+           mirrors the 26px of page *above* the bar down into it —
+           the same flip about row 26, seen from the other bank.
+
+     The filter does the flip (see the #lg-reflect-b header in
+     Base.astro: a ramping green channel + scale 104 = row 52 − y,
+     biased by the ripple but re-centred by k4 so the line never
+     drifts). The mask fades the band to nothing as it travels away
+     from the line — a reflection you can see dissolving is water;
+     one that ends in a hard edge is a sticker. The blur() trailing
+     the url() is the frost: measured in Chromium, an
+     feGaussianBlur *inside* a filter that also holds an feImage
+     empties the whole pass (raw page through the shell, zero
+     displacement), so the softening rides the CSS chain instead.
+
+     Capture note, same as refract: the box reaches past the
+     silhouette, and it is that overscan which puts the real page
+     under the strip — below the pill (or above the bar) nothing of
+     this shell is painted, so the flip samples raw content, never
+     the refract layer's warped copy of it. The shell's
+     `overflow: hidden` then clips all the reach back to the
+     rounded shape, leaving only the band. */
+  .glass-reflect {
+    display: block;
+    left: 0;
+    right: 0;
+    height: 104px;
+    z-index: -1;
+    backdrop-filter: var(--glass-capture);
+  }
+
+  .glass-reflect-b {
+    bottom: -78px;
+    filter: url(#lg-reflect-b) blur(1.3px);
+    -webkit-mask-image: linear-gradient(to bottom, transparent, black 25%);
+    mask-image: linear-gradient(to bottom, transparent, black 25%);
+  }
+
+  .glass-reflect-t {
+    top: -26px;
+    filter: url(#lg-reflect-b) blur(1.3px);
+    -webkit-mask-image: linear-gradient(to bottom, black 25%, transparent 50%);
+    mask-image: linear-gradient(to bottom, black 25%, transparent 50%);
   }
 
   /* ── Taskbar ─────────────────────────────────────────────────────
