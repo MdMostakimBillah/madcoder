@@ -547,6 +547,26 @@
   animation: dialog-in 0.28s var(--ease-editorial) both;
 }
 
+/* The veil behind the contact card frosts in on the same beat as the
+   card's slide: blur only, no tint, so the glass refracts the live page
+   (softened) rather than a darkened copy. The element also declares the
+   final blur statically — reduced-motion collapses the run to an instant
+   and must still land on a frosted veil, never a sharp one. */
+@keyframes dialog-veil {
+  from {
+    -webkit-backdrop-filter: blur(0);
+    backdrop-filter: blur(0);
+  }
+  to {
+    -webkit-backdrop-filter: blur(8px);
+    backdrop-filter: blur(8px);
+  }
+}
+
+@utility animate-veil {
+  animation: dialog-veil 0.28s var(--ease-editorial) both;
+}
+
 /* Respect users who ask for less motion — kills the glow and all easing. */
 @media (prefers-reduced-motion: reduce) {
   html {

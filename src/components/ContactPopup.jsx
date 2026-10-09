@@ -27,10 +27,10 @@ import { CONTACT_ENDPOINT } from "../data/site.js";
  * global.css, which is what lets the material show at *every* width —
  * the mobile gate owns the pills and taskbar, this shell owns itself.
  *
- * It docks as a small card against the right edge (top-aligned, like a
- * side sheet) with **no scrim**: the backdrop is invisible, so what the
- * glass refracts is the live page itself rather than a darkened copy —
- * and it still catches outside clicks, freezes the page and keeps the
+ * It docks in the bottom-right corner over a frosted veil: the backdrop
+ * carries only a `backdrop-filter` blur (no tint), so what the glass
+ * refracts is the live page itself — softened, not darkened — while the
+ * veil still catches outside clicks, freezes the page and keeps the
  * pager disarmed while the card is open.
  *
  * Delivery: Apps Script's redirect chain carries no CORS headers, so a
@@ -230,7 +230,7 @@ export default function ContactPopup() {
 
   return createPortal(
     <div
-      className="fixed inset-0 z-50 flex items-start justify-end p-4 sm:p-6"
+      className="fixed inset-0 z-50 flex items-end justify-end p-4 sm:p-6 backdrop-blur-[8px] animate-veil"
       onMouseDown={(event) => {
         // Only a press that *starts* on the backdrop dismisses — a
         // drag out of the form never closes the card by accident.
