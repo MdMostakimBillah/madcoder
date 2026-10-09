@@ -41,12 +41,12 @@ export const socials = [
 
 /**
  * Endpoint behind the "send me a message" popup (ContactPopup.jsx): the
- * URL of the deployed Google Apps Script web app, ending in `/exec`. It
- * stays empty until the script is deployed — the dialog then says so
- * plainly instead of pretending to send. The script and the five-minute
- * setup are in CONTACT_SETUP.md.
+ * deployed Google Apps Script web app, ending in `/exec`. It appends
+ * each message as a row on the "Messages" sheet — script and deployment
+ * steps in CONTACT_SETUP.md.
  */
-export const CONTACT_ENDPOINT = "";
+export const CONTACT_ENDPOINT =
+  "https://script.google.com/macros/s/AKfycbyK-kP5sLUFfiZNd9c7K8MddXoqOU64Izj4UA0wKxG929dVQ4ZiM4y2_KPfh5evIKah/exec";
 
 /**
  * Resume targeted by the download icon in the rail and the mobile pill.
