@@ -345,20 +345,28 @@
 }
 
 /* ------------------------------------------------------------------ *
- * Reveal on scroll — GSAP owns the animation (Motion.jsx).
+ * The entrance — two contracts, one hidden state each.
  *
- * Gated on `.motion`, added by an inline head script *before first paint*.
- * The motion layer arrives by dynamic import, so the hiding has to happen
- * first: otherwise the copy is already on screen when GSAP asks it to hide
- * and the entrance reads as a blink. Gating also means a no-JS visitor
- * never gets the hidden state, so nothing can be lost behind an animation
- * that never runs — and the head script arms a timeout that drops the
- * class if the motion chunk never boots.
+ * Both are gated on classes an inline head script sets *before first
+ * paint*: their layers only run after hydration, so without an earlier
+ * hiding the copy would already be on screen when the animation asked it
+ * to hide — a visible blink. Gating also means a no-JS visitor never gets
+ * the hidden state, so nothing can be lost behind an animation that never
+ * runs — and the head script arms a timeout that drops `.motion` if the
+ * motion chunk never boots.
  *
- * The selectors below MUST match REVEALS in Motion.jsx: this rule hides the
- * elements, Motion.jsx writes the same state inline, then drops `.motion`.
- * Each reveal finishes with `clearProps`, so everything settles on its
- * exact layout position. y (0.75rem) matches HIDDEN_Y there.
+ * 1. Below the fold — GSAP (Motion.jsx). The selectors MUST match REVEALS
+ *    there: this rule hides the elements, Motion.jsx writes the same state
+ *    inline, then drops `.motion`. Each reveal finishes with `clearProps`,
+ *    so everything settles on its exact layout position. y (0.75rem)
+ *    matches HIDDEN_Y there.
+ *
+ * 2. Navigation chrome — everything carrying `data-reveal`, all of it in
+ *    Sidebar.jsx — is CSS's, not GSAP's: `.railin` plays `railIn` from the
+ *    first frame, each element held to its own `animation-delay` (`--rd`
+ *    in the markup). This rule is only its fallback hidden state, in the
+ *    keyframe's own units, so the pre-paint frame, the delay and any
+ *    browser that declines to animate all show the same thing.
  *
  * One rule per element, never nested: a paragraph inside an animated
  * wrapper would fade twice and land late.
@@ -366,7 +374,6 @@
 @layer components {
   .motion
     :is(
-      [data-reveal],
       main section header,
       main p,
       main h3,
@@ -375,6 +382,53 @@
     ) {
     opacity: 0;
     transform: translateY(0.75rem);
+  }
+
+  .motion [data-reveal] {
+    opacity: 0;
+    transform: translateX(1.125rem);
+  }
+
+  /* The rail entrance itself: right → left, opacity 0 → 100%, one
+     keyframe for every chrome element — the choreography is nothing but
+     the per-element delays Sidebar writes (`--rd`, in spec order: identity
+     → nav items one by one → socials; pills and tab icons on phones, one
+     by one too), so items never arrive as a single block.
+
+     transform + opacity only, which is the whole point: the cascade runs
+     on the compositor, so the boot's long task — the refresh reflow that
+     used to freeze the first frames — cannot drop a frame of it, and it
+     starts at the first paint instead of whenever the motion island
+     finishes booting (that wait was the "laggy" sidebar: up to a second
+     of blank rail on a cold load).
+
+     `both` holds the hidden keyframe across the delay and the finished
+     one afterwards, which is why `.railin` can stay on <html> untouched
+     forever: the end state *is* the natural state, at zero running cost. */
+  .railin [data-reveal] {
+    animation: railIn 0.45s cubic-bezier(0.33, 1, 0.68, 1) both;
+    animation-delay: var(--rd, 0s);
+  }
+
+  @keyframes railIn {
+    from {
+      opacity: 0;
+      transform: translateX(1.125rem);
+    }
+    to {
+      opacity: 1;
+      transform: translateX(0);
+    }
+  }
+
+  /* The head script only sees a reduced-motion preference at load; this
+     covers it arriving later (an OS toggle mid-session): drop the
+     animation and every element lands on its natural, visible state
+     rather than holding the hidden keyframe. */
+  @media (prefers-reduced-motion: reduce) {
+    .railin [data-reveal] {
+      animation: none;
+    }
   }
 
   /* Skill bars — collapsed until their row arrives (Motion.jsx, `BAR`,

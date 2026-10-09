@@ -22,13 +22,15 @@ import { ScrollToPlugin } from "gsap/ScrollToPlugin";
  *   1. stand down the head script's failsafe
  *   2. register gsap + ScrollTrigger + ScrollToPlugin (bundled — no
  *      second fetch)
- *   3. write the same hidden state as inline styles
+ *   3. write the same hidden state as inline styles — the below-the-fold
+ *      reveals and the skill bars; the navigation chrome is CSS's to hide
+ *      and to animate (see "Not GSAP's" below)
  *   4. create the ScrollTriggers and run the one-time refresh
- *   5. drop `html.motion` — last: the inline styles now hold the elements
+ *   5. drop `html.motion` — last: the inline styles now hold those elements
  *      hidden, so removing the class changes nothing visually, and the
  *      refresh's reflow (setup's one long task) lands behind the gate
  *      instead of inside the entrance, where it used to stall the first
- *      frames for a sixth of a second while the nav items arrived.
+ *      frames for a sixth of a second while the content arrived.
  *   6. attach the section pager — a wheel flick, a swipe or a scroll key
  *      glides to the next section's stop (see the paging block below).
  *      Desktop only: below `lg` it never attaches, so phones and tablets
@@ -37,10 +39,11 @@ import { ScrollToPlugin } from "gsap/ScrollToPlugin";
  *      races a glide.
  *
  * Step 5 has to follow step 3: the other way round un-hides every element
- * whose trigger hasn't fired yet. Elements GSAP skips (anything hidden at
- * this breakpoint, e.g. the desktop-only rail block) rely on that — they lose
- * the prime class with no inline styles, so they come back natural rather than
- * stuck invisible when the viewport changes.
+ * whose trigger hasn't fired yet. Elements GSAP skips (anything without a
+ * box at this breakpoint — the project sheet's copy, say, display:none
+ * until its card opens) rely on that: they lose the prime class with no
+ * inline styles, so they come back natural rather than stuck invisible
+ * when the viewport changes.
  *
  * Every reveal ends with `clearProps`, which strips GSAP's inline styles so
  * the element settles on its exact layout position — no residual transform,
@@ -49,12 +52,27 @@ import { ScrollToPlugin } from "gsap/ScrollToPlugin";
  * Reduced-motion visitors never get `html.motion`, so this returns before
  * touching anything and the CSS hover rules in the markup carry on alone.
  *
+ * ── Not GSAP's: the navigation chrome ─────────────────────────────────────
+ * The rail, the glass pills and the tab bar — everything carrying
+ * `data-reveal` — are hidden, staggered and moved by CSS alone: `.railin`
+ * and the `railIn` keyframe in global.css, with each element's delay
+ * written as `--rd` in Sidebar.jsx. Two reasons it was handed over. It has
+ * to start at *first paint* — waiting for this island to boot held the rail
+ * blank for up to a second on a cold load, which is exactly the "laggy"
+ * sidebar entrance — and transform/opacity keyframes run on the
+ * compositor, so the boot's long task cannot stutter a frame of it. So
+ * this file never touches `[data-reveal]`: no inline hidden state, no
+ * entrance tween, and no adoption of the nav's CSS `translate` centring
+ * into a yPercent either (keyframes animate `transform`, a different
+ * property — that hack only ever existed because GSAP was writing here).
+ *
  * ── Selectors ─────────────────────────────────────────────────────────────
  * REVEALS must stay in step with the `html.motion` rule in global.css,
  * which hides the identical set before first paint. Same contract for BAR:
  * `.motion .skill-fill` collapses every bar, so this file has to write that
  * state back inline before the class drops — and every bar it writes must
- * also get a trigger, or it stays empty forever.
+ * also get a trigger, or it stays empty forever. The chrome's counterpart
+ * lives in the other half of that CSS rule and in Sidebar.jsx, not here.
  */
 
 /* Entrance distance in px — deliberately small: motion here should be
@@ -62,11 +80,11 @@ import { ScrollToPlugin } from "gsap/ScrollToPlugin";
    Matches translateY(0.75rem) in global.css. */
 const HIDDEN_Y = 12;
 
-/* Elements already on screen at boot hold for the rail entrance — name,
-   subtitle, description, nav — before they start, so the page loads as
-   one choreographed sequence in spec order rather than two animations
-   racing each other. Reels further down the page are unaffected: they
-   compute inLoad as false and receive no delay. */
+/* Main content already on screen at boot holds a beat so the rail's
+   entrance — which now starts at first paint, from CSS — owns the opening
+   moment on its own; the two then coexist, left column and right, instead
+   of racing. Reels further down the page are unaffected: they compute
+   inLoad as false and receive no delay. */
 const LOAD_DELAY = 0.25;
 
 const REVEALS = [
@@ -135,11 +153,6 @@ const buildParallax = (gsap, items, scrub) => {
     });
   });
 };
-
-/** Rail chrome reveals on load rather than on scroll — it's always on screen.
-    Unscoped on purpose: the mobile tab bar is a *sibling* of <aside>, not a
-    descendant, so `aside [data-reveal]` would miss it. */
-const RAIL = "[data-reveal]";
 
 /** Skill-bar fills. Their hidden state is scaleX(0) rather than the reveal
     pair (opacity + y) — the bar's inline width is the data and must survive
@@ -520,19 +533,21 @@ export default function Motion() {
 
       try {
         ctx = gsap.context(() => {
-          // (3) inline hidden state, matching what `html.motion` already shows
-          const targets = [
-            ...laidOut(gsap, RAIL),
-            ...REVEALS.flatMap(({ sel }) => laidOut(gsap, sel)),
-          ];
+          // (3) inline hidden state, matching what `html.motion` already shows.
+          //     The chrome is not in this list: `.railin` both holds it
+          //     hidden and animates it, on its own clock from first paint.
+          const targets = REVEALS.flatMap(({ sel }) => laidOut(gsap, sel));
           // `transition: none` ships with the hidden state on purpose: a
-          // class-set `transition-delay` (the rail nav's `delay-100`, the
-          // tab bar's `delay-300`) sits on the default `transition-property:
-          // all`, so it re-delays *every* per-frame write GSAP makes — the
-          // delay restarts before it can ever apply, computed values freeze
-          // at the hidden state for the whole tween, and the element pops in
-          // the moment GSAP stops. Each tween's `clearProps` hands the
-          // property back at the landing, class-driven delays and all.
+          // class-set transition sits on the default `transition-property:
+          // all` unless it names its own properties, and its delay there
+          // re-delays *every* per-frame write GSAP makes — the delay
+          // restarts before it can ever apply, computed values freeze at the
+          // hidden state for the whole tween, and the element pops in the
+          // moment GSAP stops. (The case this was written for — class-set
+          // delays on the rail and the tab bar — is gone with those classes
+          // and with the chrome leaving GSAP entirely; the guard stays, it
+          // costs nothing, and each tween's `clearProps` hands the property
+          // back at the landing anyway.)
           gsap.set(targets, { opacity: 0, y: HIDDEN_Y, transition: "none" });
           // An element may centre itself with the CSS `translate` property
           // (the desktop rail nav's -50%). GSAP zeroes individual transform
@@ -593,22 +608,12 @@ export default function Motion() {
             buildParallax(gsap, PARALLAX_MOBILE, true),
           );
 
-          // (4c) rail entrance — the load choreography itself. DOM order
-          // in the rail *is* the spec order: name, subtitle, description,
-          // nav (the mobile pills and tab bar filter in at whichever
-          // breakpoint is live). A tight 60ms stagger over a 450ms fade:
-          // everything has landed by ~740ms, main content trailing just
-          // behind it — present, never competing.
-          const rail = laidOut(gsap, RAIL);
-          gsap.to(rail, {
-            opacity: 1,
-            y: 0,
-            duration: 0.45,
-            stagger: 0.06,
-            delay: 0.05,
-            ease: "power3.out",
-            clearProps: "opacity,transform,transition",
-          });
+          // (4c) there is no rail entrance here — it moved to CSS before
+          // this boot ever runs (`.railin` in global.css), so it can start
+          // at first paint and run on the compositor, immune to the
+          // refresh's long task. Direction, stagger and timing all live in
+          // Sidebar's `--rd` values; see "Not GSAP's" at the top of this
+          // file.
 
           // (4d) skill bars — the fill grows to its level as the row
           // arrives. One trigger per bar on the same 92% line the reveals
@@ -650,10 +655,11 @@ export default function Motion() {
         ScrollTrigger.refresh();
 
         // (5) hand the hidden state over from CSS to GSAP. The inline
-        // styles hold every element (bars included) hidden, so dropping
-        // the class changes nothing visually — and because it happens
-        // only now, the refresh's reflow is finished before the first
-        // entrance frame instead of stuttering into it.
+        // styles hold every reveal and bar hidden — the chrome is held by
+        // `.railin`, which this drop deliberately leaves alone — so
+        // removing the class changes nothing visually. And because it
+        // happens only now, the refresh's reflow is finished before the
+        // content's first entrance frame instead of stuttering into it.
         document.documentElement.classList.remove("motion");
         booted = true;
 

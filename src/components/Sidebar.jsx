@@ -42,6 +42,21 @@ const NAV_ICONS = {
  * the pills take clicks; navigation lives in the floating glass tab bar
  * pinned above the bottom edge. The two navs are display-toggled at `lg`,
  * so only ever one of them is in the accessibility tree.
+ *
+ * ── Entrance ──────────────────────────────────────────────────────────────
+ * Every block below carries `data-reveal`, and global.css turns that into a
+ * right-to-left slide (opacity 0 -> 100%, 18px) held to each element's own
+ * `--rd` delay. Those numbers are the entire choreography, in spec order —
+ * identity -> the nav items *one at a time* -> socials on the rail, pills ->
+ * tab icons one at a time on phones — and together they land in under a
+ * second. It is CSS rather than GSAP on purpose: the cascade has to start
+ * at first paint (waiting for the motion island to boot left the rail blank
+ * for up to a second on a cold load) and compositor-run keyframes cannot be
+ * stuttered by the boot's long task. Motion.jsx never touches these
+ * elements — it neither hides them nor tweens them nor cleans up after
+ * them. The travelling indicators are the one exception in reverse: they
+ * position themselves with their own inline transforms, so they must never
+ * carry a reveal of their own.
  */
 export default function Sidebar() {
   const active = useActiveSection(NAV_IDS);
@@ -155,6 +170,7 @@ export default function Sidebar() {
         {/* ── mobile, right pill: CV download + theme switch ── */}
         <LiquidGlass
           data-reveal
+          style={{ "--rd": "0.06s" }}
           className="pointer-events-auto flex shrink-0 items-center gap-1 rounded-full border border-white/50 bg-paper/70 py-1.5 pl-2.5 pr-1.5 shadow-[0_16px_40px_-16px_rgb(20_17_13/0.5)] backdrop-blur-xl backdrop-saturate-150 dark:border-white/10 lg:hidden"
         >
           <a
@@ -174,11 +190,12 @@ export default function Sidebar() {
 
         {/* ── top: identity (desktop rail only — mobile carries it in the
              glass pill above) ── */}
-        {/* Three separate reveals so the entrance can stagger them —
-            name → subtitle → description — ahead of the nav and the main
-            content (spec order). Layout is untouched: a reveal only ever
-            animates opacity/transform, and clearProps removes both when
-            it lands. */}
+        {/* Three separate reveals so the entrance steps them in spec
+            order — name 0s -> profession 0.06s -> blurb 0.12s — ahead of
+            the nav's own cascade and then the main content. Layout is
+            untouched: a reveal only ever animates opacity and transform,
+            and unlike the GSAP era it leaves no inline styles behind to
+            clear. */}
         <div className="hidden lg:block">
           <h1
             data-reveal
@@ -192,30 +209,40 @@ export default function Sidebar() {
               full-strength — not muted */}
           <p
             data-reveal
+            style={{ "--rd": "0.06s" }}
             className="mt-1 text-[12px] font-bold tracking-wide text-ink lg:mt-1.5 lg:text-[17px]"
           >
             {identity.role}
           </p>
           <p
             data-reveal
+            style={{ "--rd": "0.12s" }}
             className="mt-4 hidden text-[15px] leading-[1.5] text-ash lg:block"
           >
             {identity.blurb}
           </p>
         </div>
 
-        {/* ── centre: text nav — desktop only; below lg the tab bar owns navigation ── */}
+        {/* ── centre: text nav — desktop only; below lg the tab bar owns
+             navigation. The container reveals nothing itself: each item
+             below does, one after another — that per-item delay *is* the
+             staging. It keeps lg:-translate-y-1/2 for its centring, a CSS
+             `translate` property the entrance's `transform` keyframes
+             never touch, so nothing has to adopt it into a tween anymore. ── */}
         <nav
           aria-label="Sections"
-          data-reveal
-          className="mt-2.5 hidden delay-100 lg:absolute lg:block lg:left-0 lg:top-1/2 lg:mt-0 lg:w-full lg:-translate-y-1/2"
+          className="mt-2.5 hidden lg:absolute lg:block lg:left-0 lg:top-1/2 lg:mt-0 lg:w-full lg:-translate-y-1/2"
         >
           <ul ref={railRef} className="relative flex flex-wrap items-center gap-x-5 gap-y-1 lg:flex-col lg:items-start lg:gap-1">
             {/* The travelling dash: ONE line that slides from item to
                 item, instead of per-item dashes cross-fading. Same 28px,
                 same amber-deep, same 300ms curve — it just moves. Held
                 invisible until the first measurement lands (railOn), so
-                SSR/no-JS keeps the original per-item dash. */}
+                SSR/no-JS keeps the original per-item dash — and because
+                that original sits on the active item's own rect, the swap
+                is pixel-identical whenever hydration lands. Never carries
+                a reveal: it positions itself with its own inline
+                transform, which one would overwrite. */}
             <span
               aria-hidden="true"
               style={{
@@ -224,10 +251,14 @@ export default function Sidebar() {
               }}
               className="pointer-events-none absolute left-0 top-0 h-px w-7 bg-amber-deep transition-transform duration-300 ease-[cubic-bezier(0.4,0,0.2,1)]"
             />
-            {navItems.map((item) => {
+            {navItems.map((item, i) => {
               const isActive = active === item.id;
               return (
-                <li key={item.id}>
+                <li
+                  key={item.id}
+                  data-reveal
+                  style={{ "--rd": `${(0.18 + i * 0.06).toFixed(2)}s` }}
+                >
                   <a
                     href={`#${item.id}`}
                     aria-current={isActive ? "true" : undefined}
@@ -273,7 +304,11 @@ export default function Sidebar() {
             the mobile top row, which floats this short row to the middle
             of the rail — the name, blurb and nav all sit on the left
             edge, so the icons must too. */}
-        <div data-reveal className="mt-auto hidden items-center gap-3 lg:flex lg:self-start">
+        <div
+          data-reveal
+          style={{ "--rd": "0.5s" }}
+          className="mt-auto hidden items-center gap-3 lg:flex lg:self-start"
+        >
           <ul className="flex items-center gap-1">
             {socials.map((social) => {
               const Icon = socialIcons[social.icon];
@@ -321,7 +356,8 @@ export default function Sidebar() {
       <nav
         aria-label="Sections"
         data-reveal
-        className="fixed inset-x-0 bottom-0 z-40 flex justify-center px-4 pb-[max(1rem,env(safe-area-inset-bottom))] delay-300 lg:hidden"
+        style={{ "--rd": "0.14s" }}
+        className="fixed inset-x-0 bottom-0 z-40 flex justify-center px-4 pb-[max(1rem,env(safe-area-inset-bottom))] lg:hidden"
       >
         <LiquidGlass
           as="ul"
@@ -334,7 +370,9 @@ export default function Sidebar() {
               Invisible until measured (tabOn), so SSR/no-JS keeps the
               original per-tab pill. Pointer-transparent: taps reach the
               link layered above it. It covers the whole link: with the
-              taskbar icon-only, a link *is* the 44px icon zone. */}
+              taskbar icon-only, a link *is* the 44px icon zone. Like the
+              rail's dash it never carries a reveal — its inline transform
+              is its position. */}
           <span
             aria-hidden="true"
             style={{
@@ -343,11 +381,15 @@ export default function Sidebar() {
             }}
             className="pointer-events-none absolute left-0 top-0 h-11 w-11 rounded-full bg-amber shadow-[0_8px_20px_-8px_rgb(252_202_36/0.75)] transition-transform duration-300 ease-out"
           />
-          {navItems.map((item) => {
+          {navItems.map((item, i) => {
             const Icon = NAV_ICONS[item.id];
             const isActive = active === item.id;
             return (
-              <li key={item.id}>
+              <li
+                key={item.id}
+                data-reveal
+                style={{ "--rd": `${(0.2 + i * 0.06).toFixed(2)}s` }}
+              >
                 {/* `relative` lifts the link above the travelling pill in
                     paint order; once it is live the active tab keeps only
                     its text colour — the pill carries the fill. */}

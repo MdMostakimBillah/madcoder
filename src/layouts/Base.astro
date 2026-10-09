@@ -69,20 +69,32 @@ const jsonLd = {
     <meta name="theme-color" content="#16130f" media="(prefers-color-scheme: dark)" />
 
     <!--
-      Reveal-on-scroll is styled only under `.motion`, so it must be set
-      before first paint: the motion layer is imported after hydration, and
-      without an earlier hiding the copy would already be on screen when GSAP
-      asked it to hide — a visible blink.
+      Two classes, two jobs — both set here, before first paint:
 
-      No JS (this never runs) or prefers-reduced-motion: the class is never
-      added and everything renders visible. The timeout is the failsafe —
-      if the motion chunk never boots, it drops the class so nothing can be
-      left hidden behind an animation that never runs. Motion.jsx stands it
-      down the moment it takes over.
+      `motion` hides the copy GSAP will re-hide inline (the below-the-fold
+      reveals). That layer only runs after hydration, so without an earlier
+      hiding the copy would already be on screen when GSAP asked it to hide
+      — a visible blink. Motion.jsx drops this class the moment it takes over.
+
+      `railin` is the navigation chrome's own entrance: a pure CSS
+      right-to-left cascade (global.css, per-element delays from Sidebar's
+      `--rd`). It starts *with the first frame* instead of after that island
+      boots — waiting for JS held the rail blank for up to a second on a
+      cold load — and compositor-run keyframes can't be stuttered by the
+      boot's long task. Nothing ever removes it: the animation finishes on
+      its own and the fill it leaves equals the natural state, so the
+      failsafe below deliberately leaves it alone (dropping it mid-cascade
+      would snap everything visible).
+
+      No JS (this never runs) or prefers-reduced-motion: neither class is
+      added and everything renders visible. The timeout is the failsafe for
+      `motion` — if the motion chunk never boots, it drops the class so
+      nothing can be left hidden behind an animation that never runs.
+      Motion.jsx stands it down the moment it takes over.
     -->
     <script is:inline>
       if (!window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
-        document.documentElement.classList.add("motion");
+        document.documentElement.classList.add("motion", "railin");
         window.__motionFail = setTimeout(function () {
           document.documentElement.classList.remove("motion");
         }, 4000);
