@@ -121,6 +121,35 @@ const jsonLd = {
     </script>
 
     <!--
+      Scroll flag for the phone glass — `html.scrolling`, consumed by
+      the `.glass-refract` rule in global.css (six SVG filter graphs a
+      frame is the whole of the measured mobile scroll jank; three is
+      60fps). A passive listener, one class and one trailing timeout:
+      no per-frame work, no layout reads, and it is inline in the head
+      so the very first swipe is already cheap — before any island
+      hydrates. No JS: the class never appears and the glass simply
+      stays fully refracted, which is the correct fallback.
+    -->
+    <script is:inline>
+      (function () {
+        var t;
+        window.addEventListener(
+          "scroll",
+          function () {
+            var root = document.documentElement;
+            if (!root.classList.contains("scrolling"))
+              root.classList.add("scrolling");
+            clearTimeout(t);
+            t = setTimeout(function () {
+              root.classList.remove("scrolling");
+            }, 160);
+          },
+          { passive: true },
+        );
+      })();
+    </script>
+
+    <!--
       Resolve the theme before the stylesheet is applied, let alone before
       first paint: the class must be on <html> by the time anything renders or
       the page flashes white on every dark-mode load. Kept inline and tiny

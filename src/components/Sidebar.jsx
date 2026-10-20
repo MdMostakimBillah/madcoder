@@ -141,7 +141,15 @@ export default function Sidebar() {
     // 7rem tall and the bottom row falls below the fold.
     <>
     <aside className="fixed inset-x-0 top-0 z-40 px-4 py-3 pointer-events-none sm:px-6 lg:sticky lg:top-0 lg:z-10 lg:block lg:self-start lg:px-0 lg:py-0 lg:pointer-events-auto">
-      <div className="relative flex items-center justify-between gap-2 lg:flex-col lg:justify-start lg:gap-0 lg:min-h-dvh lg:py-14">
+      {/* The rail's vertical padding scales with the viewport, because the
+          nav is pinned to the *centre* of the 100dvh rail while the
+          identity block hangs down from this padding: on a laptop-sized
+          window (a 1366×768 screen runs ~640 innerHeight with browser
+          chrome) the two met 5px apart, and at 1024×600 they overlapped
+          by 15px. Measured before: gap 5px @640, −15px @600; the clamp
+          holds it ~20–35px there and is exactly today's 56px from
+          ~800px of height up, so tall screens are untouched. */}
+      <div className="relative flex items-center justify-between gap-2 lg:flex-col lg:justify-start lg:gap-0 lg:min-h-dvh lg:py-[clamp(36px,7dvh,56px)]">
         {/* ── mobile, left pill: mascot + name + profession. `flex-1` so the
              card stretches to sit just beside the action pill on the right
              instead of hugging its own text. LiquidGlass swaps the old
@@ -209,18 +217,27 @@ export default function Sidebar() {
             </a>
           </h1>
           {/* legacy rail: profession sits tight under the name, bold and
-              full-strength — not muted */}
+              full-strength — not muted. Height-fluid like the blurb
+              below: the two lines above the fold's centre shrink
+              together on short windows, so the nav never crowds them. */}
           <p
             data-reveal
             style={{ "--rd": "0.06s" }}
-            className="mt-1 text-[12px] font-bold tracking-wide text-ink lg:mt-1.5 lg:text-[17px]"
+            className="mt-1 text-[12px] font-bold tracking-wide text-ink lg:mt-1.5 lg:text-[length:clamp(14px,2.1dvh,17px)]"
           >
             {identity.role}
           </p>
+          {/* Height-fluid type: the nav sits at the rail's vertical
+              centre, so how far this blurb reaches down IS the gap to
+              the nav — on laptop-height windows (≤ ~700 inner) the
+              fixed 15px version ran into it (measured 5px at 640,
+              overlap at 600). One clamp, no breakpoints: 12–15px,
+              reaching the design's 15px from ~833px of height up, so
+              desktop screens keep the exact type they had. */}
           <p
             data-reveal
             style={{ "--rd": "0.12s" }}
-            className="mt-4 hidden text-[15px] leading-[1.5] text-ash lg:block"
+            className="mt-4 hidden text-[length:clamp(12px,1.8dvh,15px)] leading-[1.5] text-ash lg:block"
           >
             {identity.blurb}
           </p>

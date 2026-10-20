@@ -1144,6 +1144,39 @@
     filter: url(#lg-dist);
   }
 
+  /* ── While the page moves: the refract pass steps aside ──────────
+     Measured (390×844, 4× CPU throttle, scripted thumb scroll, rAF
+     frame times): the three shells run SIX SVG `url(#…)` filter graphs
+     a frame — refract AND reflect each — and scroll lands at mean
+     25–31ms a frame, p95 50 — the "laggy scroll" reported. Drop the
+     layers entirely and it is 17ms (60fps); keep every backdrop
+     capture but strip only the SVG graphs and it is 18ms — so the
+     graphs, not the capture, are what cost. Three passes (either half
+     alone) measure 17–18ms too: affordable. So while scroll events are
+     arriving (`html.scrolling`, one passive listener in Base.astro)
+     only the REFRACT graph goes: turbulence and displacement step
+     aside and the backdrop falls back to a plain `blur(3px)` — the
+     same stdDeviation the in-filter feGaussianBlur was using, so the
+     pill stays frosted exactly as much while it moves (screenshot A/B
+     against full refraction at rest: indistinguishable; a bare
+     blur(0) capture, by contrast, showed the page sharply through the
+     glass). The warp itself is invisible in motion, and a plain blur
+     is Skia's accelerated path where the turbulence → blur →
+     displacement graph is not (21ms with the plain blur vs 25–31ms
+     with the graph, p95 33 vs 50; the graphs alone measured 18ms with
+     no blur at all — the 3ms buys back the frost). The surface keeps
+     tint, hairline and rim untouched, and the water line — which
+     exists to show content passing beneath it — never drops; it
+     cannot be harmed either, because its flip samples the raw page
+     *outside* the silhouette (see .glass-reflect above), where the
+     refract layer is clipped away regardless of what it draws. 160ms
+     after the last scroll event the full material returns — at rest
+     nothing matches this rule, so the resting design is untouched. */
+  html.scrolling .glass-refract {
+    backdrop-filter: blur(3px);
+    filter: none;
+  }
+
   /* ── The surface ────────────────────────────────────────────────
      Tint, one hairline edge, and the specular: a 1px catch on the
      top-left where the light is, pooling into a 5px glow inside the
