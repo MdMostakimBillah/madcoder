@@ -43,6 +43,11 @@ export function GET() {
   };
 
   return new Response(JSON.stringify(manifest, null, 2), {
-    headers: { "Content-Type": "application/manifest+json;charset=utf-8" },
+    headers: {
+      "Content-Type": "application/manifest+json;charset=utf-8",
+      // 24-hour browser cache; the SW precaches the manifest anyway, so
+      // the round-trip only happens on a cold load or after invalidation.
+      "Cache-Control": "public, max-age=86400",
+    },
   });
 }

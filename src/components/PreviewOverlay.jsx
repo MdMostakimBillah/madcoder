@@ -87,6 +87,9 @@ export default function PreviewOverlay({ project, onClose }) {
         src={project.url}
         title={`${project.name} live preview`}
         className="min-h-0 w-full flex-1 border-0 bg-white"
+        sandbox="allow-scripts allow-same-origin allow-forms allow-popups allow-popups-to-escape-sandbox"
+        allow="fullscreen"
+        referrerPolicy="no-referrer"
       />
     </div>,
     document.body,

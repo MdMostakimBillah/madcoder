@@ -191,19 +191,32 @@ export default function ContactPopup() {
 
     setStatus("sending");
     try {
-      await fetch(CONTACT_ENDPOINT, {
-        method: "POST",
-        mode: "no-cors",
-        body: new URLSearchParams({
-          email: values.email.trim(),
-          subject: values.subject.trim(),
-          description: values.description.trim(),
-          message: values.message.trim(), // optional — may be empty
-        }),
-        signal: AbortSignal.timeout
-          ? AbortSignal.timeout(15000)
-          : undefined,
-      });
+      // AbortSignal.timeout is not yet universal — fall back to a manual
+      // controller so the request always has a 15 s ceiling, never hangs.
+      let signal;
+      let timerId;
+      if (typeof AbortSignal.timeout === "function") {
+        signal = AbortSignal.timeout(15000);
+      } else {
+        const controller = new AbortController();
+        signal = controller.signal;
+        timerId = setTimeout(() => controller.abort(), 15000);
+      }
+      try {
+        await fetch(CONTACT_ENDPOINT, {
+          method: "POST",
+          mode: "no-cors",
+          body: new URLSearchParams({
+            email: values.email.trim(),
+            subject: values.subject.trim(),
+            description: values.description.trim(),
+            message: values.message.trim(), // optional — may be empty
+          }),
+          signal,
+        });
+      } finally {
+        clearTimeout(timerId);
+      }
       setStatus("sent");
       setValues(EMPTY);
       setStep(1);

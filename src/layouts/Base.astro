@@ -5,7 +5,10 @@ import { identity, socials, siteDescription } from "../data/site.js";
 
 const title = `${identity.fullName} — Front-end Developer`;
 const description = siteDescription;
-const ogImage = "https://mdmostakimbillah.github.io/madcoder/img/mostakim.webp";
+// Canonical production URL — resolved from Astro.site or fallback to Vercel.
+const siteUrl = Astro.site ? Astro.site.href.replace(/\/+$/, "") : "https://mdmostakimbillah.vercel.app";
+const canonicalUrl = new URL(Astro.url.pathname, siteUrl).href;
+const ogImage = `${siteUrl}/img/mostakim.webp`;
 
 // Inside the installed app — standalone, minimal-ui or the Windows
 // controls overlay, plus iOS Safari's navigator.standalone, which
@@ -49,7 +52,7 @@ const jsonLd = {
   alternateName: "Mostakim Billah",
   jobTitle: "Front-end Developer",
   description: identity.blurb,
-  url: "https://mdmostakimbillah.github.io/madcoder/",
+  url: siteUrl,
   image: ogImage,
   sameAs: socials.filter((social) => social.href.startsWith("http")).map((social) => social.href),
 };
@@ -192,7 +195,9 @@ const jsonLd = {
     </script>
 
     <!-- Search / social -->
+    <link rel="canonical" href={canonicalUrl} />
     <meta property="og:type" content="website" />
+    <meta property="og:url" content={canonicalUrl} />
     <meta property="og:title" content={title} />
     <meta property="og:description" content={description} />
     <meta property="og:image" content={ogImage} />
@@ -243,8 +248,10 @@ const jsonLd = {
 
     <!-- Static builds freeze the year at build time; refresh it on every visit. -->
     <script is:inline>
-      document.querySelectorAll("[data-year]").forEach((el) => {
-        el.textContent = String(new Date().getFullYear());
+      document.addEventListener("DOMContentLoaded", function () {
+        document.querySelectorAll("[data-year]").forEach(function (el) {
+          el.textContent = String(new Date().getFullYear());
+        });
       });
     </script>
 

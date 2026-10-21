@@ -10,9 +10,9 @@ export default function AboutSection() {
   return (
     <Section id="about" title="About">
       <div className="space-y-4">
-        {aboutParagraphs.map((paragraph) => (
+        {aboutParagraphs.map((paragraph, i) => (
           <p
-            key={paragraph.slice(0, 32)}
+            key={i}
             className="text-[16.5px] leading-[1.68] text-justify text-ink-soft"
           >
             <RichText text={paragraph} />

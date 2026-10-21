@@ -13,7 +13,7 @@ import { pwa } from "./src/pwa.mjs";
 const onVercel = Boolean(process.env.VERCEL);
 
 export default defineConfig({
-  site: "https://mdmostakimbillah.github.io",
+  site: onVercel ? "https://mdmostakimbillah.vercel.app" : "https://mdmostakimbillah.github.io",
   base: onVercel ? "/" : "/madcoder",
   // pwa() runs last so its build:done hook can scan the finished dist
   // and emit an exact-precaching service worker (see src/pwa.mjs).

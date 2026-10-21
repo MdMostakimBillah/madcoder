@@ -70,7 +70,8 @@ export default function ProfileCard() {
 
   const facts = [
     ["Name", "Md Mostakim Billah"],
-    ["Age", "23"],
+    // Born 2003 — computed so the card stays accurate every year.
+    ["Age", String(new Date().getFullYear() - 2003)],
     ["Gender", "Male"],
     ["Blood", "O- (ve)"],
   ];
