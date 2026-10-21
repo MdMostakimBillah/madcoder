@@ -60,7 +60,11 @@ const NAV_ICONS = {
  * carry a reveal of their own.
  */
 export default function Sidebar() {
-  const active = useActiveSection(NAV_IDS);
+  const activeSection = useActiveSection(NAV_IDS);
+  const [clickedSection, setClickedSection] = useState(null);
+  const lockTimerRef = useRef(null);
+
+  const active = clickedSection || activeSection;
 
   // ── The moving indicator ───────────────────────────────────────────────
   // Instead of each item fading its own dash in and out, ONE dash (the
@@ -85,17 +89,43 @@ export default function Sidebar() {
     tabOn: false,
   });
 
+  const handleTabClick = (id) => () => {
+    setClickedSection(id);
+    clearTimeout(lockTimerRef.current);
+    lockTimerRef.current = setTimeout(() => {
+      setClickedSection(null);
+    }, 750);
+  };
+
   useLayoutEffect(() => {
     const measure = () => {
       const read = (ul, side) => {
         if (!ul || ul.offsetWidth === 0) return null; // hidden at this breakpoint
         const link = ul.querySelector("a[aria-current]");
         if (!link) return null;
+
+        if (side === "tab") {
+          // Robust layout offset relative to ul container, completely
+          // immune to CSS keyframe transforms (e.g. railIn translateX)
+          let mx = link.offsetLeft;
+          let my = link.offsetTop;
+          let parent = link.offsetParent;
+          while (parent && parent !== ul) {
+            mx += parent.offsetLeft;
+            my += parent.offsetTop;
+            parent = parent.offsetParent;
+          }
+          if (typeof mx === "number" && !Number.isNaN(mx)) {
+            return { mx, my };
+          }
+          const box = ul.getBoundingClientRect();
+          const rect = link.getBoundingClientRect();
+          return { mx: rect.left - box.left, my: rect.top - box.top };
+        }
+
         const box = ul.getBoundingClientRect();
         const rect = link.getBoundingClientRect();
-        return side === "rail"
-          ? { dy: rect.top - box.top + rect.height / 2 - 0.5 }
-          : { mx: rect.left - box.left, my: rect.top - box.top };
+        return { dy: rect.top - box.top + rect.height / 2 - 0.5 };
       };
 
       const rail = read(railRef.current, "rail");
@@ -120,14 +150,22 @@ export default function Sidebar() {
     };
 
     measure();
-    // A breakpoint flip hides one list and reveals the other — remeasure
-    // so the visible indicator lands on its item instead of a stale one.
+    // A breakpoint flip or screen rotation re-measures
     window.addEventListener("resize", measure, { passive: true });
+    window.addEventListener("orientationchange", measure, { passive: true });
     const wide = window.matchMedia("(min-width: 1024px)");
     wide.addEventListener("change", measure);
+
+    // Re-verify after font load and after entrance animations finish
+    document.fonts?.ready?.then(measure);
+    const animTimer = setTimeout(measure, 480);
+
     return () => {
       window.removeEventListener("resize", measure);
+      window.removeEventListener("orientationchange", measure);
       wide.removeEventListener("change", measure);
+      clearTimeout(animTimer);
+      clearTimeout(lockTimerRef.current);
     };
   }, [active]);
 
@@ -140,7 +178,7 @@ export default function Sidebar() {
     // *inside* the min-height box, otherwise the rail becomes 100dvh +
     // 7rem tall and the bottom row falls below the fold.
     <>
-    <aside className="fixed inset-x-0 top-0 z-40 px-4 py-3 pointer-events-none sm:px-6 lg:sticky lg:top-0 lg:z-10 lg:block lg:self-start lg:px-0 lg:py-0 lg:pointer-events-auto">
+    <aside className="fixed inset-x-0 top-0 z-40 px-4 pt-[max(0.75rem,env(safe-area-inset-top,0px))] pb-3 pointer-events-none sm:px-6 lg:sticky lg:top-0 lg:z-10 lg:block lg:self-start lg:px-0 lg:py-0 lg:pointer-events-auto">
       {/* The rail's vertical padding scales with the viewport, because the
           nav is pinned to the *centre* of the 100dvh rail while the
           identity block hangs down from this padding: on a laptop-sized
@@ -397,17 +435,17 @@ export default function Sidebar() {
         aria-label="Sections"
         data-reveal
         style={{ "--rd": "0.14s" }}
-        className="fixed inset-x-0 bottom-0 z-40 flex justify-center px-4 pb-[max(1rem,env(safe-area-inset-bottom))] lg:hidden"
+        className="pointer-events-none fixed inset-x-0 bottom-0 z-40 flex justify-center px-4 pb-[max(0.875rem,calc(env(safe-area-inset-bottom,0px)+0.5rem))] lg:hidden"
       >
         <LiquidGlass
           as="ul"
           ref={tabRef}
           reflect="top"
-          className="relative flex items-center gap-1 rounded-full border border-white/50 bg-paper/70 p-1.5 shadow-[0_16px_40px_-16px_rgb(20_17_13/0.5)] backdrop-blur-xl backdrop-saturate-150 dark:border-white/10"
+          className="pointer-events-auto relative flex items-center justify-center gap-1 rounded-full border border-white/50 bg-paper/70 p-1.5 shadow-[0_16px_40px_-16px_rgb(20_17_13/0.5)] backdrop-blur-xl backdrop-saturate-150 dark:border-white/10"
         >
           {/* The travelling pill: the active amber background slides
               between tabs instead of each tab flipping its own on — same
-              44px, same colour, same 300ms curve, one element in motion.
+              44px, same colour, 300ms curve, one element in motion.
               Invisible until measured (tabOn), so SSR/no-JS keeps the
               original per-tab pill. Pointer-transparent: taps reach the
               link layered above it. It covers the whole link: with the
@@ -417,10 +455,10 @@ export default function Sidebar() {
           <span
             aria-hidden="true"
             style={{
-              transform: `translate(${ind.mx}px, ${ind.my}px)`,
+              transform: `translate3d(${ind.mx}px, ${ind.my}px, 0)`,
               visibility: ind.tabOn ? "visible" : "hidden",
             }}
-            className="pointer-events-none absolute left-0 top-0 h-11 w-11 rounded-full bg-amber shadow-[0_8px_20px_-8px_rgb(252_202_36/0.75)] transition-transform duration-300 ease-out"
+            className="pointer-events-none absolute left-0 top-0 h-11 w-11 rounded-full bg-amber shadow-[0_8px_20px_-8px_rgb(252_202_36/0.75)] transition-transform duration-300 ease-[cubic-bezier(0.2,0.8,0.2,1)] will-change-transform"
           />
           {navItems.map((item, i) => {
             const Icon = NAV_ICONS[item.id];
@@ -436,15 +474,16 @@ export default function Sidebar() {
                     its text colour — the pill carries the fill. */}
                 <a
                   href={`#${item.id}`}
+                  onClick={handleTabClick(item.id)}
                   aria-current={isActive ? "true" : undefined}
                   aria-label={item.label}
                   title={item.label}
-                  className={`tab-link relative flex h-11 w-11 items-center justify-center rounded-full transition-all duration-300 ease-out active:scale-95 ${
+                  className={`tab-link relative flex h-11 w-11 items-center justify-center rounded-full transition-colors duration-200 active:scale-95 ${
                     isActive
                       ? ind.tabOn
-                        ? "text-amber-ink"
+                        ? "text-amber-ink font-bold"
                         : "bg-amber text-amber-ink shadow-[0_8px_20px_-8px_rgb(252_202_36/0.75)]"
-                      : "text-ink-soft hover:bg-ink/5 hover:text-ink"
+                      : "text-ink-soft hover:bg-ink/5 hover:text-ink active:bg-ink/10"
                   }`}
                 >
                   {/* Icon only: the name lives in aria-label/title, so the

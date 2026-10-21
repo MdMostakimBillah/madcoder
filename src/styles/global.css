@@ -92,6 +92,17 @@
     text-rendering: optimizeLegibility;
   }
 
+  * {
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  /* Fast, responsive touch on navigation buttons without 300ms delay */
+  .tab-link {
+    touch-action: manipulation;
+    user-select: none;
+    -webkit-user-select: none;
+  }
+
   /* Amber on paper is too light for an outline — use ink, amber on dark. */
   :focus-visible {
     outline: 2px solid var(--color-ink);
@@ -1175,6 +1186,10 @@
   html.scrolling .glass-refract {
     backdrop-filter: blur(3px);
     filter: none;
+  }
+
+  html.scrolling .glass-reflect {
+    opacity: 0;
   }
 
   /* ── The surface ────────────────────────────────────────────────
